@@ -66,8 +66,8 @@ Another Helium-era miner. Pi 4, WM1303 concentrator (SX1303), carrier board, ant
 
 ```bash
 sudo apt update && sudo apt install -y git
-git clone https://github.com/KMX415/meshpoint.git ~/meshpoint
-cd ~/meshpoint && sudo bash scripts/install.sh
+sudo git clone https://github.com/KMX415/meshpoint.git /opt/meshpoint
+cd /opt/meshpoint && sudo bash scripts/install.sh
 ```
 
 ```bash

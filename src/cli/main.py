@@ -6,7 +6,7 @@ import argparse
 import subprocess
 import sys
 
-VERSION = "0.1.0"
+from src.version import __version__ as VERSION
 
 
 def cmd_setup(_args: argparse.Namespace) -> None:

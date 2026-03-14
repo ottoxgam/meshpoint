@@ -32,9 +32,9 @@ dashboard:
   static_dir: "frontend"
 
 device:
-  device_name: "Mesh Point Alpha"
-  latitude: 42.3601
-  longitude: -71.0589
+  device_name: "Mesh Point"
+  latitude: 0.0
+  longitude: 0.0
   altitude: 25
   hardware_description: "RAK2287 + Raspberry Pi 4"
   firmware_version: "0.2.0"
