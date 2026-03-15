@@ -10,6 +10,8 @@ class SimpleNodeList {
         this._initSearch();
     }
 
+    get nodeCount() { return this._nodes.length; }
+
     _initSearch() {
         const input = document.getElementById('node-search');
         if (!input) return;
@@ -38,7 +40,26 @@ class SimpleNodeList {
         if (existing) {
             existing.last_heard = new Date().toISOString();
             if (packet.rssi != null) existing.rssi = packet.rssi;
+            if (packet.snr != null) existing.snr = packet.snr;
+            if (packet.packet_type === 'nodeinfo' && packet.decoded_payload) {
+                const p = packet.decoded_payload;
+                if (p.long_name) existing.long_name = p.long_name;
+                if (p.short_name) existing.short_name = p.short_name;
+            }
+        } else {
+            this._nodes.push({
+                node_id: packet.source_id,
+                protocol: packet.protocol || 'meshtastic',
+                rssi: packet.rssi,
+                snr: packet.snr,
+                last_heard: new Date().toISOString(),
+            });
         }
+        this._nodes.sort((a, b) => {
+            const aTime = a.last_heard || a.last_seen || '';
+            const bTime = b.last_heard || b.last_seen || '';
+            return bTime.localeCompare(aTime);
+        });
         this._render();
     }
 

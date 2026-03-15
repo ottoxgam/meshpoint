@@ -7,13 +7,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     const nodeList = new SimpleNodeList('node-list');
     const packetFeed = new SimplePacketFeed('packet-tbody');
 
-    await _loadInitial(nodeMap, nodeList);
+    await _loadInitial(nodeMap, nodeList, packetFeed);
 
     window.concentratorWS.on('packet', (packet) => {
         packetFeed.addPacket(packet);
         nodeMap.updateFromPacket(packet);
         nodeList.updateFromPacket(packet);
         _incrementPacketCount();
+        _setText('stat-nodes', `${nodeList.nodeCount} nodes`);
     });
 
     window.concentratorWS.connect();
@@ -21,14 +22,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     setInterval(() => _refreshData(nodeMap, nodeList), 15_000);
 });
 
-async function _loadInitial(nodeMap, nodeList) {
+async function _loadInitial(nodeMap, nodeList, packetFeed) {
     try {
-        const [deviceRes, nodesRes] = await Promise.all([
+        const [deviceRes, nodesRes, packetsRes] = await Promise.all([
             fetch('/api/device/status'),
             fetch('/api/nodes'),
+            fetch('/api/packets?limit=50'),
         ]);
         const device = await deviceRes.json();
         const nodesData = await nodesRes.json();
+        const packetsData = await packetsRes.json();
 
         _setText('device-name', device.device_name || 'Mesh Point');
         _setText('device-version', device.firmware_version ? `v${device.firmware_version}` : '');
@@ -37,6 +40,12 @@ async function _loadInitial(nodeMap, nodeList) {
         nodeMap.loadNodes(nodes, device);
         nodeList.loadNodes(nodes);
         _setText('stat-nodes', `${nodes.length} nodes`);
+
+        const packets = packetsData.packets || packetsData || [];
+        const sorted = packets.sort((a, b) => (a.rx_time || 0) - (b.rx_time || 0));
+        sorted.forEach(pkt => packetFeed.addPacket(pkt));
+        _totalPackets = sorted.length;
+        _setText('stat-packets', `${_totalPackets} packets`);
     } catch (e) {
         console.error('Initial load failed:', e);
     }
