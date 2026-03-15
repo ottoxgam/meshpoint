@@ -143,11 +143,37 @@ class NodeMap {
         const marker = this._markers[packet.source_id];
         if (marker) {
             marker.setStyle({ color: '#00ff88', weight: 2 });
+            this._drawPacketLine(marker);
             setTimeout(() => {
                 const proto = (packet.protocol || 'meshtastic') === 'meshtastic' ? '#06b6d4' : '#a855f7';
                 marker.setStyle({ color: proto, weight: 1 });
             }, 5000);
         }
+    }
+
+    _drawPacketLine(sourceMarker) {
+        if (!this._deviceMarker) return;
+        const deviceLatLng = this._deviceMarker.getLatLng();
+        const nodeLatLng = sourceMarker.getLatLng();
+
+        const line = L.polyline([nodeLatLng, deviceLatLng], {
+            color: '#00e5a0',
+            weight: 2,
+            opacity: 0.8,
+            dashArray: '6, 4',
+            className: 'packet-line',
+        }).addTo(this._map);
+
+        let opacity = 0.8;
+        const fade = setInterval(() => {
+            opacity -= 0.1;
+            if (opacity <= 0) {
+                clearInterval(fade);
+                this._map.removeLayer(line);
+            } else {
+                line.setStyle({ opacity });
+            }
+        }, 200);
     }
 
     _esc(str) {
