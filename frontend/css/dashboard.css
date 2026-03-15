@@ -256,31 +256,36 @@ body {
 .packet-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 0.72rem;
+    font-size: 0.78rem;
+    font-family: var(--font-mono);
 }
 
-.packet-table th {
-    padding: 0.4rem 0.5rem;
-    text-align: left;
-    font-size: 0.6rem;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--text-muted);
-    background: var(--bg-secondary);
-    border-bottom: 1px solid var(--border);
+.packet-table thead th {
     position: sticky;
     top: 0;
+    background: var(--bg-secondary);
+    padding: 0.5rem 0.6rem;
+    text-align: left;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    font-size: 0.7rem;
+    letter-spacing: 0.04em;
+    border-bottom: 1px solid var(--border);
 }
+
+.packet-table tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+}
+
+.packet-table tbody tr:hover { background: var(--bg-card-hover, rgba(6, 182, 212, 0.04)); }
 
 .packet-table td {
-    padding: 0.35rem 0.5rem;
-    border-bottom: 1px solid rgba(35, 48, 73, 0.3);
-    color: var(--text-secondary);
+    padding: 0.4rem 0.6rem;
     white-space: nowrap;
+    color: var(--text-secondary);
 }
-
-.packet-table tr { transition: background 0.15s; }
-.packet-table tr:hover { background: rgba(6, 182, 212, 0.04); }
 
 .packet-table td.type-text { color: var(--accent-green); }
 .packet-table td.type-position { color: var(--accent-amber); }
@@ -300,8 +305,26 @@ body {
 
 .packet-table td.td-source {
     color: var(--accent-cyan);
-    font-family: var(--font-mono);
+}
+
+.packet-details-cell {
+    max-width: 280px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 0.72rem;
+    opacity: 0.85;
+}
+
+.packet-row { cursor: pointer; }
+
+.packet-detail-row td {
+    padding: 0.5rem 0.75rem !important;
     font-size: 0.7rem;
+    font-family: var(--font-mono);
+    color: var(--text-secondary);
+    white-space: pre-wrap;
+    word-break: break-word;
+    background: var(--bg-secondary);
 }
 
 .packet-count {

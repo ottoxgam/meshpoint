@@ -43,9 +43,9 @@ class SimplePacketFeed {
             <td class="td-source">${srcShort}</td>
             <td class="${protocolClass}">${protocol}</td>
             <td class="${typeClass}">${type}</td>
-            <td class="${rssiClass}" style="font-family:var(--font-mono);">${rssi}</td>
-            <td style="font-family:var(--font-mono);">${snr}</td>
-            <td class="${typeClass}" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;">${this._esc(details)}</td>
+            <td class="${rssiClass}">${rssi}</td>
+            <td>${snr}</td>
+            <td class="packet-details-cell ${typeClass}">${this._esc(details)}</td>
         `;
 
         tr.addEventListener('click', () => this._toggleDetail(tr, packet));
@@ -75,7 +75,7 @@ class SimplePacketFeed {
         detailTr.classList.add('packet-detail-row');
         const td = document.createElement('td');
         td.colSpan = 7;
-        td.style.cssText = 'padding:0.5rem 0.75rem;font-size:0.7rem;font-family:var(--font-mono);color:var(--text-secondary);white-space:pre-wrap;word-break:break-word;background:var(--bg-secondary);';
+
 
         const payload = packet.decoded_payload;
         if (payload && typeof payload === 'object') {
