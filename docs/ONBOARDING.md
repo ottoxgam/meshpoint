@@ -35,6 +35,8 @@ You need a Raspberry Pi 4 with an SX1302 or SX1303 LoRa concentrator. The easies
 | **RAK Hotspot V2** (RAK7248) | RAK2287 (SX1302) | $30-70 on eBay | Pi 4 + metal enclosure + antenna |
 | **SenseCap M1** | WM1303 (SX1303) | $30-60 on eBay | Pi 4 + metal enclosure + antenna, may include 64GB SD card |
 
+> **RAK2287 vs SenseCap M1 — important difference for remote deployments:** The RAK2287's SPI bus can latch in a stuck state after a service restart. When this happens, the concentrator will not reinitialize and **a clean `sudo reboot` will not fix it** — only a full power unplug (10+ seconds) clears the SPI bus. The SenseCap M1 does not have this issue and handles service restarts cleanly. If you are deploying a Mesh Point in a location where you cannot physically access it (rooftop, remote site), the **SenseCap M1 is strongly recommended** as it can be updated and restarted remotely without risk.
+
 RAK Hotspot V2: remove 4 bottom screws to access the SD card. SenseCap M1: remove 2 screws on the back panel (opposite the Ethernet/antenna ports) -- the SD card may be held down with kapton tape.
 
 ## Prerequisites
@@ -249,16 +251,18 @@ sudo /opt/meshpoint/venv/bin/pip install -r requirements.txt
 sudo systemctl restart meshpoint
 ```
 
-After restarting the service, the SX1302 concentrator may fail to initialize with `lgw_start() failed` or `Failed to set SX1250_0 in STANDBY_RC mode`. This happens when the SPI bus is still locked from the previous session. If you see this error:
+**RAK2287 units (RAK Hotspot V2, DIY builds with 2287):** After restarting the service, the concentrator may fail to initialize with `lgw_start() failed` or `Failed to set SX1250_0 in STANDBY_RC mode`. The 2287's SPI bus latches in a stuck state and **cannot be cleared by `sudo reboot`** — only a full power unplug resets it. If you see this error:
 
-1. Try restarting the service again: `sudo systemctl restart meshpoint`
+1. Try restarting the service once more: `sudo systemctl restart meshpoint` (occasionally clears on a second GPIO reset)
 2. If it still fails, do a **clean shutdown** before power cycling:
    ```bash
    sudo systemctl stop meshpoint
    sync
    sudo poweroff
    ```
-3. Wait for the **green LED to stop blinking**, then unplug for 10 seconds and plug back in.
+3. Wait for the **green LED to stop blinking**, then unplug for 10+ seconds and plug back in.
+
+**SenseCap M1 units:** Service restarts work cleanly without any power cycling. The M1's WM1303 concentrator handles SPI stop/start gracefully. These units are safe for remote updates.
 
 **Important:** Never just yank the power cable while the Pi is running. The SD card has no write cache protection — pulling power during writes can corrupt files, the git repo, or the database. Always `sudo poweroff` first and wait for the LED to go dark.
 
@@ -314,15 +318,13 @@ Common issues:
 
 If logs show `lgw_start() failed` or `Failed to set SX1250_0 in STANDBY_RC mode`:
 
-1. Try `sudo systemctl restart meshpoint` again -- the second GPIO reset often clears it
-2. If that doesn't work, do a clean shutdown and power cycle:
-   ```bash
-   sudo systemctl stop meshpoint
-   sync
-   sudo poweroff
-   ```
-3. Wait for the green LED to stop, unplug for 10 seconds, plug back in
-4. The SPI bus latches in a bad state after unclean shutdowns -- only a full power cycle clears it
+**RAK2287 units:** The 2287's SPI bus holds state through reboots. `sudo reboot` will **not** fix it. You must do a full power cycle:
+
+1. `sudo poweroff`
+2. Wait for the green LED to stop blinking
+3. Unplug power for 10+ seconds, then plug back in
+
+**SenseCap M1 units:** Try `sudo systemctl restart meshpoint` — the M1 handles this cleanly and should not require a power cycle.
 
 ### Database errors after update
 
