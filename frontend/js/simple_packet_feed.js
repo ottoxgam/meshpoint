@@ -22,8 +22,11 @@ class SimplePacketFeed {
             ? `!${packet.source_id.substring(0, 8)}`
             : '--';
 
-        const rssi = packet.rssi != null ? `${Number(packet.rssi).toFixed(0)}` : '--';
-        const snr = packet.snr != null ? `${Number(packet.snr).toFixed(1)}` : '--';
+        const sig = packet.signal || {};
+        const rawRssi = sig.rssi != null ? sig.rssi : packet.rssi;
+        const rawSnr = sig.snr != null ? sig.snr : packet.snr;
+        const rssi = rawRssi != null ? `${Number(rawRssi).toFixed(0)}` : '--';
+        const snr = rawSnr != null ? `${Number(rawSnr).toFixed(1)}` : '--';
         const type = packet.packet_type || '--';
         const details = this._summarize(packet);
 

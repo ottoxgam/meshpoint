@@ -36,11 +36,15 @@ class SimpleNodeList {
 
     updateFromPacket(packet) {
         if (!packet.source_id) return;
+        const sig = packet.signal || {};
+        const pktRssi = sig.rssi != null ? sig.rssi : packet.rssi;
+        const pktSnr = sig.snr != null ? sig.snr : packet.snr;
+
         const existing = this._nodes.find(n => n.node_id === packet.source_id);
         if (existing) {
             existing.last_heard = new Date().toISOString();
-            if (packet.rssi != null) existing.rssi = packet.rssi;
-            if (packet.snr != null) existing.snr = packet.snr;
+            if (pktRssi != null) existing.rssi = pktRssi;
+            if (pktSnr != null) existing.snr = pktSnr;
             if (packet.packet_type === 'nodeinfo' && packet.decoded_payload) {
                 const p = packet.decoded_payload;
                 if (p.long_name) existing.long_name = p.long_name;
@@ -50,8 +54,8 @@ class SimpleNodeList {
             this._nodes.push({
                 node_id: packet.source_id,
                 protocol: packet.protocol || 'meshtastic',
-                rssi: packet.rssi,
-                snr: packet.snr,
+                rssi: pktRssi,
+                snr: pktSnr,
                 last_heard: new Date().toISOString(),
             });
         }
