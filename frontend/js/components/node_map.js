@@ -1,14 +1,16 @@
 /**
  * Leaflet map with marker clustering for the local Mesh Point dashboard.
- * Displays captured nodes with protocol-colored markers.
+ * Displays the Mesh Point device and captured nodes with protocol-colored markers.
  */
 class NodeMap {
     constructor(containerId) {
         this._containerId = containerId;
         this._map = null;
         this._markerGroup = null;
+        this._deviceMarker = null;
         this._markers = {};
         this._initialized = false;
+        this._hasFitBounds = false;
         this._init();
     }
 
@@ -57,6 +59,7 @@ class NodeMap {
         const bounds = [];
 
         if (device && device.latitude && device.longitude) {
+            this._addDeviceMarker(device);
             bounds.push([device.latitude, device.longitude]);
         }
 
@@ -66,41 +69,73 @@ class NodeMap {
             if (lat == null || lon == null) continue;
 
             bounds.push([lat, lon]);
-
-            const isMeshtastic = (n.protocol || 'meshtastic') === 'meshtastic';
-            const color = isMeshtastic ? '#06b6d4' : '#a855f7';
-
-            const heard = n.last_heard || n.last_seen;
-            const isRecent = heard && (Date.now() - new Date(heard).getTime()) < 60000;
-
-            const marker = L.circleMarker([lat, lon], {
-                radius: 6,
-                fillColor: color,
-                fillOpacity: 0.8,
-                color: isRecent ? '#00ff88' : color,
-                weight: isRecent ? 2 : 1,
-                className: isRecent ? 'node-pulse' : '',
-            });
-
-            const name = n.long_name || n.name || n.node_id || '--';
-            const rssi = (n.rssi ?? n.latest_rssi) != null
-                ? `${Number(n.rssi ?? n.latest_rssi).toFixed(0)} dBm` : '--';
-
-            marker.bindPopup(
-                `<strong>${this._esc(name)}</strong><br>` +
-                `Protocol: ${n.protocol || 'meshtastic'}<br>` +
-                `RSSI: ${rssi}`
-            );
-
-            this._markerGroup.addLayer(marker);
-            this._markers[n.node_id] = marker;
+            this._addNodeMarker(n);
         }
 
-        if (bounds.length > 1) {
-            this._map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 });
-        } else if (bounds.length === 1) {
-            this._map.setView(bounds[0], 13);
+        if (!this._hasFitBounds && bounds.length > 0) {
+            if (bounds.length > 1) {
+                this._map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 });
+            } else {
+                this._map.setView(bounds[0], 13);
+            }
+            this._hasFitBounds = true;
         }
+    }
+
+    _addDeviceMarker(device) {
+        if (this._deviceMarker) {
+            this._map.removeLayer(this._deviceMarker);
+        }
+
+        this._deviceMarker = L.marker([device.latitude, device.longitude], {
+            icon: L.divIcon({
+                html: '<div class="device-marker"></div>',
+                className: '',
+                iconSize: [16, 16],
+                iconAnchor: [8, 8],
+            }),
+            zIndexOffset: 1000,
+        });
+
+        const name = device.device_name || 'Mesh Point';
+        this._deviceMarker.bindPopup(
+            `<strong>${this._esc(name)}</strong><br>` +
+            `Type: Mesh Point<br>` +
+            `Lat: ${device.latitude.toFixed(4)}<br>` +
+            `Lon: ${device.longitude.toFixed(4)}`
+        );
+
+        this._deviceMarker.addTo(this._map);
+    }
+
+    _addNodeMarker(n) {
+        const isMeshtastic = (n.protocol || 'meshtastic') === 'meshtastic';
+        const color = isMeshtastic ? '#06b6d4' : '#a855f7';
+
+        const heard = n.last_heard || n.last_seen;
+        const isRecent = heard && (Date.now() - new Date(heard).getTime()) < 60000;
+
+        const marker = L.circleMarker([n.latitude, n.longitude], {
+            radius: 6,
+            fillColor: color,
+            fillOpacity: 0.8,
+            color: isRecent ? '#00ff88' : color,
+            weight: isRecent ? 2 : 1,
+            className: isRecent ? 'node-pulse' : '',
+        });
+
+        const name = n.long_name || n.name || n.node_id || '--';
+        const rssi = (n.rssi ?? n.latest_rssi) != null
+            ? `${Number(n.rssi ?? n.latest_rssi).toFixed(0)} dBm` : '--';
+
+        marker.bindPopup(
+            `<strong>${this._esc(name)}</strong><br>` +
+            `Protocol: ${n.protocol || 'meshtastic'}<br>` +
+            `RSSI: ${rssi}`
+        );
+
+        this._markerGroup.addLayer(marker);
+        this._markers[n.node_id] = marker;
     }
 
     updateFromPacket(packet) {
