@@ -252,10 +252,47 @@ sudo systemctl restart meshpoint
 After restarting the service, the SX1302 concentrator may fail to initialize with `lgw_start() failed` or `Failed to set SX1250_0 in STANDBY_RC mode`. This happens when the SPI bus is still locked from the previous session. If you see this error:
 
 1. Try restarting the service again: `sudo systemctl restart meshpoint`
-2. If it still fails, **unplug the device for 10 seconds** and plug it back in. A full power cycle clears the SPI bus.
-3. After plugging back in, wait 30-60 seconds for the Pi to boot and the service to start automatically.
+2. If it still fails, do a **clean shutdown** before power cycling:
+   ```bash
+   sudo systemctl stop meshpoint
+   sync
+   sudo poweroff
+   ```
+3. Wait for the **green LED to stop blinking**, then unplug for 10 seconds and plug back in.
 
-This is a known hardware behavior of the SX1302/SX1250 radio — software resets don't always fully release the SPI bus.
+**Important:** Never just yank the power cable while the Pi is running. The SD card has no write cache protection — pulling power during writes can corrupt files, the git repo, or the database. Always `sudo poweroff` first and wait for the LED to go dark.
+
+### Recovering from a Corrupted Install
+
+If `meshpoint logs` shows `SyntaxError: source code string cannot contain null bytes` or `git pull` fails with `error: inflate` / `fatal: loose object is corrupt`, the SD card took a bad write (usually from a hard power cut). Fix it with a clean re-clone:
+
+```bash
+cd /opt/meshpoint
+sudo cp -r data/ /tmp/meshpoint-data-backup
+sudo cp config/local.yaml /tmp/local-yaml-backup
+cd /
+sudo rm -rf /opt/meshpoint
+sudo git clone https://github.com/KMX415/meshpoint.git /opt/meshpoint
+sudo cp -r /tmp/meshpoint-data-backup /opt/meshpoint/data/
+sudo cp /tmp/local-yaml-backup /opt/meshpoint/config/local.yaml
+sudo chmod 777 /opt/meshpoint/data
+sudo chmod 666 /opt/meshpoint/data/*.db
+sudo python3 -m venv /opt/meshpoint/venv
+sudo /opt/meshpoint/venv/bin/pip install -r /opt/meshpoint/requirements.txt
+sudo systemctl restart meshpoint
+```
+
+This preserves your packet database and device config. The venv must be recreated since it is not tracked by git.
+
+### Using pip on Raspberry Pi OS
+
+Raspberry Pi OS (Bookworm and later) uses PEP 668 externally-managed environments. Never use the system `pip` directly — always use the venv:
+
+```bash
+sudo /opt/meshpoint/venv/bin/pip install -r requirements.txt
+```
+
+Running `sudo pip install ...` without the venv path will fail with `error: externally-managed-environment`.
 
 ---
 
@@ -277,9 +314,27 @@ Common issues:
 
 If logs show `lgw_start() failed` or `Failed to set SX1250_0 in STANDBY_RC mode`:
 
-1. Try `sudo systemctl restart meshpoint` again
-2. If that doesn't work, unplug the device for 10 seconds and plug back in
-3. The SPI bus sometimes latches after an unclean shutdown -- only a full power cycle clears it
+1. Try `sudo systemctl restart meshpoint` again -- the second GPIO reset often clears it
+2. If that doesn't work, do a clean shutdown and power cycle:
+   ```bash
+   sudo systemctl stop meshpoint
+   sync
+   sudo poweroff
+   ```
+3. Wait for the green LED to stop, unplug for 10 seconds, plug back in
+4. The SPI bus latches in a bad state after unclean shutdowns -- only a full power cycle clears it
+
+### Database errors after update
+
+If logs show `sqlite3.OperationalError: table nodes has no column named <column>`:
+
+The database schema is older than the current code. The service runs automatic migrations on startup. If it fails with `attempt to write a readonly database`, fix permissions:
+
+```bash
+sudo chmod 777 /opt/meshpoint/data
+sudo chmod 666 /opt/meshpoint/data/*.db
+sudo systemctl restart meshpoint
+```
 
 ### No LoRa packets captured
 
