@@ -218,9 +218,11 @@ sudo meshpoint setup # re-run config wizard
 
 ## Contributing
 
-The API server, dashboard, analytics, storage, and relay modules are fully open source. Protocol decoding and hardware abstraction are distributed as compiled modules.
+Meshpoint is still early alpha. Pull requests are welcome, but please keep changes small and reviewable.
 
-Fork → branch → PR. Bug reports and feature requests welcome as issues.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines, workflow, and PR expectations.
+
+AI-assisted contributions are allowed, but contributors should review and understand all code before submitting.
 
 ---
 
