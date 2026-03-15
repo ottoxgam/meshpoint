@@ -19,7 +19,7 @@ class NodeMap {
         this._map = L.map(this._containerId, {
             zoomControl: true,
             scrollWheelZoom: true,
-        }).setView([44.0, -72.7], 10);
+        }).setView([39.8, -98.5], 4);
 
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
             attribution: '&copy; CARTO',
@@ -51,17 +51,21 @@ class NodeMap {
     loadNodes(nodes, device) {
         if (!this._initialized) return;
 
-        if (device && device.latitude && device.longitude) {
-            this._map.setView([device.latitude, device.longitude], 11);
-        }
-
         this._markerGroup.clearLayers();
         this._markers = {};
+
+        const bounds = [];
+
+        if (device && device.latitude && device.longitude) {
+            bounds.push([device.latitude, device.longitude]);
+        }
 
         for (const n of nodes) {
             const lat = n.latitude;
             const lon = n.longitude;
             if (lat == null || lon == null) continue;
+
+            bounds.push([lat, lon]);
 
             const isMeshtastic = (n.protocol || 'meshtastic') === 'meshtastic';
             const color = isMeshtastic ? '#06b6d4' : '#a855f7';
@@ -79,7 +83,8 @@ class NodeMap {
             });
 
             const name = n.long_name || n.name || n.node_id || '--';
-            const rssi = n.rssi != null ? `${n.rssi} dBm` : '--';
+            const rssi = (n.rssi ?? n.latest_rssi) != null
+                ? `${Number(n.rssi ?? n.latest_rssi).toFixed(0)} dBm` : '--';
 
             marker.bindPopup(
                 `<strong>${this._esc(name)}</strong><br>` +
@@ -89,6 +94,12 @@ class NodeMap {
 
             this._markerGroup.addLayer(marker);
             this._markers[n.node_id] = marker;
+        }
+
+        if (bounds.length > 1) {
+            this._map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 });
+        } else if (bounds.length === 1) {
+            this._map.setView(bounds[0], 13);
         }
     }
 
