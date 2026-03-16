@@ -4,6 +4,8 @@ import logging
 from datetime import datetime, timezone
 from typing import Optional
 
+from datetime import timedelta
+
 from src.models.node import Node
 from src.storage.database import DatabaseManager
 
@@ -62,6 +64,13 @@ class NodeRepository:
 
     async def get_count(self) -> int:
         row = await self._db.fetch_one("SELECT COUNT(*) as cnt FROM nodes")
+        return row["cnt"] if row else 0
+
+    async def get_active_count(self, hours: int = 24) -> int:
+        cutoff = (datetime.now(timezone.utc) - timedelta(hours=hours)).isoformat()
+        row = await self._db.fetch_one(
+            "SELECT COUNT(*) as cnt FROM nodes WHERE last_heard >= ?", (cutoff,)
+        )
         return row["cnt"] if row else 0
 
     async def get_with_position(self) -> list[Node]:

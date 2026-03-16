@@ -85,7 +85,7 @@ async function _updateStats() {
         const nodeCount = await nodeRes.json();
         const device = await deviceRes.json();
 
-        _setText('stat-nodes-val', nodeCount.count);
+        _setText('stat-nodes-val', `${nodeCount.active} / ${nodeCount.count}`);
         _setText('stat-packets-val', traffic.total_packets);
         _setText('stat-rate-val', traffic.packets_per_minute);
         _setText('stat-rssi-val', signal.avg_rssi != null ? `${signal.avg_rssi} dBm` : '--');
@@ -99,7 +99,7 @@ async function _updateStats() {
 
         _setText('stat-uptime-val', _formatUptime(device.uptime_seconds || 0));
 
-        _setText('node-count-badge', `${nodeCount.count} nodes`);
+        _setText('node-count-badge', `${nodeCount.active} / ${nodeCount.count} nodes`);
         _setText('packet-count-badge', `${traffic.total_packets} packets`);
         _setText('version-badge', device.firmware_version ? `v${device.firmware_version}` : '--');
 

@@ -29,7 +29,8 @@ async def list_nodes(limit: int = 500, enrich: bool = True):
 @router.get("/count")
 async def node_count():
     count = await _node_repo.get_count()
-    return {"count": count}
+    active = await _node_repo.get_active_count()
+    return {"count": count, "active": active}
 
 
 @router.get("/map")
