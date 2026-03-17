@@ -1,6 +1,6 @@
 # Meshpoint
 
-**Open-source LoRa packet intelligence for Meshtastic and Meshcore mesh networks.**
+**Open-source LoRa packet intelligence for Meshtastic mesh networks.** Meshcore support is in development.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-green.svg)](https://www.python.org/)
