@@ -44,6 +44,7 @@ class TestMeshcoreEventAdapter(unittest.TestCase):
         raw = self._make_envelope("channel_message", {
             "text": "Channel broadcast",
             "channel_idx": 2,
+            "SNR": 11.25,
             "timestamp": 1700000000,
         })
         pkt = adapt_event(raw)
@@ -52,6 +53,7 @@ class TestMeshcoreEventAdapter(unittest.TestCase):
         self.assertEqual(pkt.destination_id, "channel:2")
         self.assertEqual(pkt.channel_hash, 2)
         self.assertEqual(pkt.decoded_payload["channel"], 2)
+        self.assertEqual(pkt.signal.snr, 11.25)
 
     def test_advertisement(self):
         raw = self._make_envelope("advertisement", {

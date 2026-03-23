@@ -55,7 +55,7 @@ def _build_contact_message(
         protocol=Protocol.MESHCORE,
         packet_type=PacketType.TEXT,
         decoded_payload={"text": payload.get("text", "")},
-        signal=signal,
+        signal=_rf_signal_from_payload(payload, signal),
         timestamp=_parse_timestamp(payload.get("timestamp")),
         decrypted=True,
     )
@@ -76,7 +76,7 @@ def _build_channel_message(
             "channel": channel_idx,
         },
         channel_hash=channel_idx,
-        signal=signal,
+        signal=_rf_signal_from_payload(payload, signal),
         timestamp=_parse_timestamp(payload.get("timestamp")),
         decrypted=True,
     )
@@ -149,9 +149,9 @@ def _build_rx_log_data(
 def _rf_signal_from_payload(
     payload: dict, fallback: Optional[SignalMetrics]
 ) -> Optional[SignalMetrics]:
-    """Extract signal metrics from an RF log payload, preferring its values."""
-    rssi = payload.get("rssi")
-    snr = payload.get("snr")
+    """Extract signal metrics from a payload, checking both lower and upper case keys."""
+    rssi = payload.get("rssi", payload.get("RSSI"))
+    snr = payload.get("snr", payload.get("SNR"))
     if rssi is None and snr is None:
         return fallback
     return SignalMetrics(
