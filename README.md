@@ -36,7 +36,7 @@ Select your region during setup and the concentrator auto-tunes to the correct f
 | **KR** | 921.125 MHz | Custom |
 | **SG_923** | 917.375 MHz | Custom |
 
-Regions without a standard MeshCore preset prompt for custom frequency entry during setup, or use `meshpoint meshcore-radio custom` anytime.
+Regions without a standard MeshCore preset prompt for custom frequency entry during setup, or use `meshpoint meshcore-radio custom` anytime. See the [Onboarding Guide](docs/ONBOARDING.md#adding-a-meshcore-companion-optional) for full MeshCore setup details.
 
 ### Standard Node vs Meshpoint
 
@@ -214,6 +214,8 @@ meshpoint meshcore-radio # configure MeshCore companion radio frequency
 sudo meshpoint setup     # re-run config wizard
 ```
 
+See the [Onboarding Guide](docs/ONBOARDING.md#managing-your-mesh-point) for full CLI reference and configuration details.
+
 ---
 
 ## Troubleshooting
@@ -259,7 +261,32 @@ cd /opt/meshpoint && sudo git pull origin main && sudo systemctl restart meshpoi
 
 The local dashboard shows an orange update indicator when a new version is available. After updating, verify the new version in the startup banner or with `meshpoint version`.
 
-If you're updating to a version that changes your region support, re-run `sudo meshpoint setup` to select your frequency region.
+### Changing your frequency region (existing Mesh Points)
+
+You don't need to re-run the full setup wizard. Edit your config and restart:
+
+```bash
+sudo nano /opt/meshpoint/config/local.yaml
+```
+
+Add or change the `region` line under `radio:`:
+
+```yaml
+radio:
+  region: "EU_868"
+```
+
+Then restart: `sudo systemctl restart meshpoint`
+
+To change your MeshCore companion radio to match:
+
+```bash
+meshpoint meshcore-radio EU
+```
+
+Or enter a custom frequency: `meshpoint meshcore-radio custom`
+
+See the [Onboarding Guide](docs/ONBOARDING.md#changing-meshcore-radio-frequency) for full details on MeshCore radio configuration.
 
 ---
 
