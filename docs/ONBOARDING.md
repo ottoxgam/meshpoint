@@ -34,7 +34,7 @@ You need a Raspberry Pi 4 with an SX1302 or SX1303 LoRa concentrator. The easies
 
 | Unit | Concentrator | Price Range | Notes |
 |------|-------------|-------------|-------|
-| **RAK Hotspot V2** (RAK7248) | RAK2287 (SX1302) | $30-70 on eBay | Pi 4 + metal enclosure + antenna |
+| **RAK Hotspot V2** (RAK7248) | RAK2287 (SX1302) | $30-70 on eBay | Pi 4 + metal enclosure + antenna, usually 32GB SD card (more than enough for our usage) |
 | **SenseCap M1** | WM1303 (SX1303) | $30-60 on eBay | Pi 4 + metal enclosure + antenna, may include 64GB SD card |
 
 > **RAK2287 vs SenseCap M1:** The RAK2287's SPI bus can latch if power is cut while the concentrator is active. The Meshpoint service includes a GPIO reset script that holds the concentrator in reset during shutdown, making `sudo reboot` and `sudo systemctl restart meshpoint` safe. However, hard power loss (yanked cable, power outage) can still latch the SPI bus — requiring a full power unplug (10+ seconds) to clear. Repeated hard power loss can permanently damage the SX1250 radio. The SenseCap M1 does not have this issue. For deployments with unreliable power, the **SenseCap M1 is recommended**, or add a small UPS (PiSugar, USB battery with passthrough).
