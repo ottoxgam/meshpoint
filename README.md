@@ -13,7 +13,7 @@
 [![GitHub stars](https://img.shields.io/github/stars/KMX415/meshpoint?style=flat&color=yellow)](https://github.com/KMX415/meshpoint/stargazers)
 [![GitHub issues](https://img.shields.io/github/issues/KMX415/meshpoint)](https://github.com/KMX415/meshpoint/issues)
 [![Last commit](https://img.shields.io/github/last-commit/KMX415/meshpoint)](https://github.com/KMX415/meshpoint/commits/main)
-[![Version](https://img.shields.io/badge/version-0.5.3-orange.svg)](https://github.com/KMX415/meshpoint#changelog)
+[![Version](https://img.shields.io/badge/version-0.5.3-orange.svg)](docs/CHANGELOG.md)
 
 ![Meshradar Dashboard](dashboard.png)
 
@@ -27,21 +27,6 @@ A Raspberry Pi-based LoRa listener that captures traffic from **Meshtastic** and
 
 Packets are captured, decrypted, stored locally, and shown on a real-time dashboard. Optionally, everything syncs upstream to [Meshradar](https://meshradar.io) for aggregated city-wide mesh intelligence.
 
-### Supported Regions
-
-Select your region during setup and the concentrator auto-tunes to the correct frequency. MeshCore companion radios are configured to match automatically.
-
-| Region | Meshtastic Frequency | MeshCore Frequency |
-|--------|---------------------|-------------------|
-| **US** | 906.875 MHz | 910.525 MHz |
-| **EU_868** | 869.525 MHz | 869.618 MHz |
-| **ANZ** | 917.375 MHz | 916.575 MHz |
-| **IN** | 865.625 MHz | Custom |
-| **KR** | 921.125 MHz | Custom |
-| **SG_923** | 917.375 MHz | Custom |
-
-Regions without a standard MeshCore preset prompt for custom frequency entry during setup, or use `meshpoint meshcore-radio custom` anytime. See the [Onboarding Guide](docs/ONBOARDING.md#adding-a-meshcore-companion-optional) for full MeshCore setup details.
-
 ### Standard Node vs Meshpoint
 
 | | Standard Node | Meshpoint |
@@ -52,6 +37,26 @@ Regions without a standard MeshCore preset prompt for custom frequency entry dur
 | **Packet visibility** | Own traffic | Everything in range |
 | **Storage** | None | SQLite with retention |
 | **Dashboard** | None | Real-time web UI |
+
+---
+
+## Features
+
+**Dual-protocol capture.** Meshtastic and MeshCore traffic captured simultaneously. The SX1302 handles Meshtastic on 8 channels (SF7-SF12), while a USB MeshCore companion covers MeshCore on its own frequency.
+
+**Full packet decoding.** 14 Meshtastic portnums decoded: TEXT, POSITION, NODEINFO, TELEMETRY, ROUTING, ADMIN, WAYPOINT, DETECTION_SENSOR, PAXCOUNTER, STORE_FORWARD, RANGE_TEST, TRACEROUTE, NEIGHBORINFO, and MAP_REPORT. 6 MeshCore message types decoded. Device roles (CLIENT, ROUTER, REPEATER, TRACKER, SENSOR) extracted from NodeInfo.
+
+**Private channel decryption.** Configure your private channel PSKs and the Meshpoint decodes traffic on those channels alongside the default key. Supports any number of channels with AES-128 or AES-256 keys.
+
+**6 frequency regions.** US, EU_868, ANZ, IN, KR, and SG_923. Select during setup and the concentrator auto-tunes. MeshCore companion radios configure to match automatically.
+
+**Real-time dashboard.** Live map with node positions, color-coded packet feed with decoded payloads, traffic charts, signal analytics, and 24h active node counts. Accessible from any device on your network.
+
+**Cloud integration.** Optional WebSocket uplink to [Meshradar](https://meshradar.io) for aggregated multi-site mesh intelligence. Fleet management, city-wide maps, and packet history across all your Meshpoints.
+
+**Smart relay.** Optional re-broadcast of captured packets via a separate SX1262 radio. Deduplication, token-bucket rate limiting, RSSI-based signal filtering. TX path is independent from RX: transmission never blocks reception.
+
+**Auto-detect hardware.** SenseCap M1 carrier board identified automatically via I2C probe. MeshCore USB companions auto-detected on `/dev/ttyUSB*` and `/dev/ttyACM*`.
 
 ---
 
@@ -142,70 +147,17 @@ Open `http://<pi-ip>:8080` for the local dashboard.
 └──────────┘    └──────────┘    └─────────────────────────┘
 ```
 
-**Capture:** SX1302 HAL receives Meshtastic on 8 channels across SF7-SF12. A USB MeshCore companion (optional) receives MeshCore traffic on its configured frequency.
-
-**Decode:** Packets from both protocols decrypted and parsed. Positions, text messages, telemetry, node info, advertisements, routing data: all extracted and stored.
-
-**Dashboard:** Local web UI with a live map, packet feed with decoded contents, traffic charts, and signal analytics.
-
-**Upstream:** Optional WebSocket connection to Meshradar for aggregated multi-site mesh intelligence.
-
 ---
 
-## Smart Relay (Optional)
+## CLI
 
-Connect a separate SX1262 radio (T-Beam, Heltec, RAK4631) via USB and the Meshpoint can re-broadcast packets it hears:
-
-- Deduplication via packet ID tracking
-- Token-bucket rate limiting
-- RSSI-based signal filtering
-- TX path is independent from RX: transmission never blocks reception
-
----
-
-## Configuration
-
-All settings live in `config/default.yaml` with user overrides in `config/local.yaml`.
-
-```yaml
-radio:
-  region: "US"                 # US, EU_868, ANZ, IN, KR, SG_923
-  frequency_mhz: 906.875      # auto-configured from region
-  spreading_factor: 11         # SF11 (LongFast)
-  bandwidth_khz: 250.0
-
-capture:
-  sources:
-    - concentrator
-    - meshcore_usb
-  meshcore_usb:
-    auto_detect: true          # scans /dev/ttyUSB* and /dev/ttyACM*
-
-relay:
-  enabled: false
-  max_relay_per_minute: 20
-
-upstream:
-  enabled: true
-  url: "wss://api.meshradar.io/ws"
+```bash
+meshpoint status         # service status + config summary
+meshpoint logs           # tail the service journal
+meshpoint restart        # restart the service
+meshpoint meshcore-radio # configure MeshCore companion radio frequency
+sudo meshpoint setup     # re-run config wizard
 ```
-
-### Private Channel Monitoring
-
-By default, the Meshpoint decrypts traffic on the standard Meshtastic default key (`AQ==`). To also decode packets on your private channels, add the channel keys to `config/local.yaml`:
-
-```yaml
-meshtastic:
-  channel_keys:
-    MyChannel: "base64encodedPSK=="
-    AnotherChannel: "anotherBase64PSK=="
-```
-
-The channel name must match exactly what's configured on your Meshtastic node (case-sensitive). To find your channel's base64 PSK, open the Meshtastic app, go to the channel settings, and copy the pre-shared key.
-
-Restart the service after adding keys: `sudo systemctl restart meshpoint`
-
-The Meshpoint tries each configured key when decoding a packet. Packets matching any configured key will be fully decoded. Packets on channels with unknown keys will continue to show as ENCRYPTED.
 
 ---
 
@@ -225,17 +177,13 @@ FastAPI server on port 8080:
 
 ---
 
-## CLI
+## Updating
 
 ```bash
-meshpoint status         # service status + config summary
-meshpoint logs           # tail the service journal
-meshpoint restart        # restart the service
-meshpoint meshcore-radio # configure MeshCore companion radio frequency
-sudo meshpoint setup     # re-run config wizard
+cd /opt/meshpoint && sudo git pull origin main && sudo systemctl restart meshpoint
 ```
 
-See the [Onboarding Guide](docs/ONBOARDING.md#managing-your-mesh-point) for full CLI reference and configuration details.
+The local dashboard shows an orange update indicator when a new version is available.
 
 ---
 
@@ -249,83 +197,11 @@ See the [Onboarding Guide](docs/ONBOARDING.md#managing-your-mesh-point) for full
 
 ---
 
-## Changelog
+## Documentation
 
-### v0.5.3 (March 31, 2026)
-
-- **Multi-key decryption:** packets on private Meshtastic channels now decrypt when channel keys are configured in `local.yaml`. Previously only the default key was tried. ([#5](https://github.com/KMX415/meshpoint/issues/5))
-- **Heartbeat optimization:** reduced upstream heartbeat interval for lower cloud costs.
-
-### v0.5.2 (March 31, 2026)
-
-- **Core module binary fix:** v0.5.1 shipped updated source but stale compiled `.so` files. This release includes the correctly compiled binaries.
-
-### v0.5.1 (March 30, 2026)
-
-- **Non-LongFast preset fix:** `ConcentratorChannelPlan.from_radio_config()` no longer ignores spreading factor and bandwidth when using the region's default frequency. EU_868 MediumFast (SF9/BW250), ShortFast, and other presets now work correctly. Previously, any preset at the default frequency was silently overridden to LongFast (SF11/BW250). ([#4](https://github.com/KMX415/meshpoint/issues/4))
-
-### v0.5.0 (March 29, 2026)
-
-- **Multi-region frequency support:** 6 Meshtastic regions (US, EU_868, ANZ, IN, KR, SG_923) with auto-tuning concentrator and setup wizard region selector.
-- **Preset tuning:** service channel SF and BW are configurable via `local.yaml`. Supports MediumFast, ShortFast, ShortTurbo: not just LongFast.
-- **Frequency override:** set `frequency_mhz` in `local.yaml` to tune to a non-default slot within your region.
-- **Full portnum decoding:** position speed/heading/altitude, power metrics, routing errors, NEIGHBORINFO, TRACEROUTE payloads.
-- **`meshpoint meshcore-radio` CLI:** switch MeshCore companion frequency without re-running the full wizard. Presets (US/EU/ANZ) or custom entry.
-- **Startup banner accuracy:** boot log shows the actual radio config, not just the region default.
-- **Config stability:** empty YAML sections no longer crash the service on startup.
-
-### Earlier (March 2026)
-
-#### Early March
-- **Real-time packet streaming:** cloud dashboard receives packets instantly via WebSocket. Live animated lines trace packets from source nodes to your Meshpoint on the map.
-- **Cloud map overhaul:** marker clustering, signal heatmap layer, topology lines from neighborinfo data, and a live Recent Packets ticker panel.
-- **SenseCap M1 support:** auto-detects SenseCap M1 carrier board via I2C probe during setup. Flash an SD card and go.
-- **14 Meshtastic portnums decoded:** TEXT, POSITION, NODEINFO, TELEMETRY, ROUTING, ADMIN, WAYPOINT, DETECTION_SENSOR, PAXCOUNTER, STORE_FORWARD, RANGE_TEST, TRACEROUTE, NEIGHBORINFO, MAP_REPORT, plus encrypted packet tracking.
-- **Device role extraction:** node table shows CLIENT, ROUTER, REPEATER, TRACKER, SENSOR, and other roles from NodeInfo packets.
-- **Smart relay engine:** deduplication, token-bucket rate limiting, hop/type/signal filtering, independent SX1262 TX path.
-
-#### Mid March
-- **Live dashboard UX:** color-coded packet feed, decoded payload contents, 24h active node counts, version-based update indicator, and enlarged map view.
-- **Cloud dashboard tabs:** tabbed layout with fleet view, interactive map controls, device-scoped filters, unified packet cards with signal strength bars, and public activity stream for visitors.
-- **MeshCore USB capture:** new capture source for USB-connected MeshCore companion nodes. Auto-detects the device, configures radio frequency via the setup wizard (US/EU/ANZ presets or custom), with auto-reconnect and health monitoring. Startup banner shows all active sources.
-- **Custom frequency tuning:** configurable SX1302 channel plan via `local.yaml`. Validated on live hardware with LongFast (SF11/BW250). Dual-protocol HAL patch for simultaneous Meshtastic and MeshCore sync words.
-
----
-
-## Updating
-
-```bash
-cd /opt/meshpoint && sudo git pull origin main && sudo systemctl restart meshpoint
-```
-
-The local dashboard shows an orange update indicator when a new version is available. After updating, verify the new version in the startup banner or with `meshpoint version`.
-
-### Changing your frequency region (existing Meshpoints)
-
-You don't need to re-run the full setup wizard. Edit your config and restart:
-
-```bash
-sudo nano /opt/meshpoint/config/local.yaml
-```
-
-Add or change the `region` line under `radio:`:
-
-```yaml
-radio:
-  region: "EU_868"
-```
-
-Then restart: `sudo systemctl restart meshpoint`
-
-To change your MeshCore companion radio to match:
-
-```bash
-meshpoint meshcore-radio EU
-```
-
-Or enter a custom frequency: `meshpoint meshcore-radio custom`
-
-See the [Onboarding Guide](docs/ONBOARDING.md#changing-meshcore-radio-frequency) for full details on MeshCore radio configuration.
+- **[Onboarding Guide](docs/ONBOARDING.md):** step-by-step from empty Pi to running Meshpoint
+- **[Configuration Guide](docs/CONFIGURATION.md):** all config options, private channels, relay, upstream, radio tuning
+- **[Changelog](docs/CHANGELOG.md):** version history and release notes
 
 ---
 
