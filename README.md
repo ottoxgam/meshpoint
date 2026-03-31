@@ -56,7 +56,7 @@ Packets are captured, decrypted, stored locally, and shown on a real-time dashbo
 
 **Smart relay.** Optional re-broadcast of captured packets via a separate SX1262 radio. Deduplication, token-bucket rate limiting, RSSI-based signal filtering. TX path is independent from RX: transmission never blocks reception.
 
-**Auto-detect hardware.** SenseCap M1 carrier board identified automatically via I2C probe. MeshCore USB companions auto-detected on `/dev/ttyUSB*` and `/dev/ttyACM*`.
+**Auto-detect hardware.** RAK Hotspot V2 and SenseCap M1 identified automatically during setup. MeshCore USB companions auto-detected on `/dev/ttyUSB*` and `/dev/ttyACM*`.
 
 ---
 
