@@ -100,6 +100,21 @@ class RelayConfig:
 
 
 @dataclass
+class MqttConfig:
+    enabled: bool = False
+    broker: str = "mqtt.meshtastic.org"
+    port: int = 1883
+    username: str = "meshdev"
+    password: str = "large4cats"
+    topic_root: str = "msh"
+    region: str = "US"
+    publish_channels: list[str] = field(default_factory=lambda: ["LongFast", "MeshCore"])
+    publish_json: bool = False
+    location_precision: str = "exact"
+    homeassistant_discovery: bool = False
+
+
+@dataclass
 class AppConfig:
     radio: RadioConfig = field(default_factory=RadioConfig)
     meshtastic: MeshtasticConfig = field(default_factory=MeshtasticConfig)
@@ -110,6 +125,7 @@ class AppConfig:
     upstream: UpstreamConfig = field(default_factory=UpstreamConfig)
     device: DeviceConfig = field(default_factory=DeviceConfig)
     relay: RelayConfig = field(default_factory=RelayConfig)
+    mqtt: MqttConfig = field(default_factory=MqttConfig)
 
 
 def _merge_dataclass(instance, overrides: dict):
@@ -144,6 +160,7 @@ def _apply_yaml(cfg: AppConfig, path: Path) -> None:
         "upstream": cfg.upstream,
         "device": cfg.device,
         "relay": cfg.relay,
+        "mqtt": cfg.mqtt,
     }
 
     for section_name, section_instance in section_map.items():
