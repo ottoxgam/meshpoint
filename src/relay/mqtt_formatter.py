@@ -11,7 +11,7 @@ import logging
 from dataclasses import dataclass
 from typing import Optional
 
-from src.models.packet import Packet, PacketType, Protocol
+from src.models.packet import Packet, PacketType
 
 logger = logging.getLogger(__name__)
 
