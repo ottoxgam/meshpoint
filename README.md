@@ -17,7 +17,7 @@
 
 ![Meshradar Dashboard](dashboard-v3.png)
 
-![Meshpoint Terminal](docs/meshpoint-terminal-banner.png)
+![Meshpoint Log](MP%20Log.png)
 
 ---
 
