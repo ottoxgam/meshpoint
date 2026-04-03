@@ -15,7 +15,7 @@
 [![Last commit](https://img.shields.io/github/last-commit/KMX415/meshpoint)](https://github.com/KMX415/meshpoint/commits/main)
 [![Version](https://img.shields.io/badge/version-0.5.4-orange.svg)](docs/CHANGELOG.md)
 
-![Meshradar Dashboard](dashboard.png)
+![Meshradar Dashboard](dashboard-v3.png)
 
 ![Meshpoint Terminal](docs/meshpoint-terminal-banner.png)
 
