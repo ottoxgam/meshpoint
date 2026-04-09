@@ -10,7 +10,7 @@ from fastapi.staticfiles import StaticFiles
 from src.analytics.network_mapper import NetworkMapper
 from src.analytics.signal_analyzer import SignalAnalyzer
 from src.analytics.traffic_monitor import TrafficMonitor
-from src.api.routes import analytics, device, messages, nodes, packets, system_metrics, telemetry, update_check
+from src.api.routes import analytics, config_routes, device, messages, nodes, packets, system_metrics, telemetry, update_check
 from src.api.upstream_client import UpstreamClient
 from src.api.websocket_manager import WebSocketManager
 from src.config import AppConfig, load_config, validate_activation
@@ -53,7 +53,7 @@ def create_app(config: AppConfig | None = None) -> FastAPI:
 
         message_repo = MessageRepository(pipeline.database)
         tx_service = _build_tx_service(config, pipeline)
-        _setup_message_interception(pipeline, message_repo)
+        _setup_message_interception(pipeline, message_repo, config)
 
         upstream = UpstreamClient(config.upstream, identity)
         pipeline.on_packet(upstream.send_packet)
@@ -81,6 +81,7 @@ def create_app(config: AppConfig | None = None) -> FastAPI:
     app.include_router(telemetry.router)
     app.include_router(update_check.router)
     app.include_router(messages.router)
+    app.include_router(config_routes.router)
 
     @app.websocket("/ws")
     async def websocket_endpoint(websocket: WebSocket):
@@ -231,10 +232,19 @@ def _get_channel_plan(config: AppConfig):
 
 
 def _setup_message_interception(
-    coord: PipelineCoordinator, message_repo: MessageRepository
+    coord: PipelineCoordinator,
+    message_repo: MessageRepository,
+    config: AppConfig,
 ) -> None:
-    """Register a callback to intercept TEXT messages for storage."""
-    from src.models.packet import PacketType, Protocol
+    """Register a callback to intercept TEXT messages for storage.
+
+    Filters DMs: only saves messages involving our node_id as normal
+    conversations. DMs between other nodes are tagged as 'overheard'.
+    """
+    from src.models.packet import PacketType
+
+    our_node_id = config.transmit.node_id
+    our_node_hex = f"{our_node_id:08x}" if our_node_id else ""
 
     def on_text_packet(packet: Packet) -> None:
         if packet.packet_type != PacketType.TEXT:
@@ -245,15 +255,26 @@ def _setup_message_interception(
         if not text:
             return
 
-        is_broadcast = packet.destination_id in (
-            "ffffffff", "ffff", "broadcast",
-        )
+        dest = (packet.destination_id or "").lower()
+        source = (packet.source_id or "").lower()
+        is_broadcast = dest in ("ffffffff", "ffff", "broadcast")
+
         if is_broadcast:
             node_id = f"broadcast:{packet.protocol.value}:0"
+            direction = "received"
+        elif our_node_hex and dest == our_node_hex:
+            node_id = packet.source_id or "unknown"
+            direction = "received"
+        elif our_node_hex and source == our_node_hex:
+            node_id = packet.destination_id or "unknown"
+            direction = "sent"
         else:
             node_id = packet.source_id or "unknown"
+            direction = "overheard"
 
-        node_name = packet.decoded_payload.get("long_name", "") if packet.decoded_payload else ""
+        node_name = ""
+        if packet.decoded_payload:
+            node_name = packet.decoded_payload.get("long_name", "")
 
         import asyncio
         try:
@@ -264,14 +285,17 @@ def _setup_message_interception(
                 node_name=node_name,
                 protocol=packet.protocol.value,
                 packet_id=packet.packet_id or "",
+                direction=direction,
             ))
             loop.create_task(ws_manager.broadcast("message_received", {
                 "text": text,
                 "node_id": node_id,
                 "node_name": node_name,
                 "protocol": packet.protocol.value,
-                "direction": "received",
+                "direction": direction,
                 "packet_id": packet.packet_id or "",
+                "source_id": packet.source_id or "",
+                "destination_id": packet.destination_id or "",
             }))
         except RuntimeError:
             pass
@@ -305,6 +329,13 @@ def _init_routes(
         message_repo=message_repo or MessageRepository(coord.database),
         node_repo=coord.node_repo,
         meshcore_tx=meshcore_tx,
+    )
+
+    crypto = coord._crypto if hasattr(coord, "_crypto") else None
+    config_routes.init_routes(
+        config=config,
+        crypto=crypto,
+        tx_service=tx_service,
     )
 
 

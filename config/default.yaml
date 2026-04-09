@@ -68,6 +68,9 @@ transmit:
   node_id: null             # auto-generated 4-byte Meshtastic node ID
   tx_power_dbm: 14          # conservative default (dBm)
   max_duty_cycle_percent: 1.0  # EU-safe default
+  long_name: "Mesh Point"
+  short_name: "MPNT"
+  hop_limit: 3
 
 mqtt:
   enabled: false

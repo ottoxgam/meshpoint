@@ -164,6 +164,9 @@ function _setupTabs() {
                 window.messagingPanel.onActivated();
                 window.messagingPanel.resetUnreadBadge();
             }
+            if (tabId === 'radio' && window.radioSettings) {
+                window.radioSettings.onActivated();
+            }
         });
     });
 }

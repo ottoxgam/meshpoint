@@ -96,10 +96,10 @@ async def send_message(req: SendRequest):
 
 
 @router.get("/conversations")
-async def get_conversations():
+async def get_conversations(include_overheard: bool = False):
     if _message_repo is None:
         raise HTTPException(503, "Message storage not available")
-    conversations = await _message_repo.get_conversations()
+    conversations = await _message_repo.get_conversations(include_overheard)
     return [c.to_dict() for c in conversations]
 
 

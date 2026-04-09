@@ -111,27 +111,36 @@ class MessageRepository:
         protocol: str,
         channel: int = 0,
         packet_id: str = "",
+        direction: str = "received",
     ) -> int:
-        """Record an inbound message. Returns the row ID."""
+        """Record an inbound message. Use direction='overheard' for DMs between other nodes."""
         now = datetime.now(timezone.utc).isoformat()
         cursor = await self._db.execute(
             """INSERT INTO messages
                (direction, text, node_id, node_name, protocol,
                 channel, timestamp, status, packet_id)
                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-            ("received", text, node_id, node_name, protocol,
+            (direction, text, node_id, node_name, protocol,
              channel, now, "delivered", packet_id),
         )
         await self._db.commit()
         return cursor.lastrowid
 
-    async def get_conversations(self) -> list[Conversation]:
-        """List all conversations, most recent first."""
+    async def get_conversations(
+        self, include_overheard: bool = False,
+    ) -> list[Conversation]:
+        """List conversations, most recent first.
+
+        By default excludes overheard DMs between other nodes.
+        Set include_overheard=True for monitor mode.
+        """
+        where_clause = "" if include_overheard else "WHERE direction != 'overheard'"
         rows = await self._db.fetch_all(
-            """SELECT node_id, node_name, protocol, text, timestamp,
+            f"""SELECT node_id, node_name, protocol, text, timestamp,
                       SUM(CASE WHEN direction = 'received'
                                AND status != 'read' THEN 1 ELSE 0 END) as unread
                FROM messages
+               {where_clause}
                GROUP BY node_id
                ORDER BY MAX(timestamp) DESC"""
         )

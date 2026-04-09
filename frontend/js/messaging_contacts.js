@@ -12,9 +12,12 @@ class MessagingContacts {
         this._filter = 'all';
     }
 
-    async load() {
+    async load(includeOverheard = false) {
         try {
-            const res = await fetch('/api/messages/conversations');
+            const url = includeOverheard
+                ? '/api/messages/conversations?include_overheard=true'
+                : '/api/messages/conversations';
+            const res = await fetch(url);
             this._conversations = await res.json();
             this.render();
         } catch (e) {

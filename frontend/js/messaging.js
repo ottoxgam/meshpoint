@@ -1,7 +1,8 @@
 /**
- * Main messaging panel controller for the local Mesh Point dashboard.
+ * Main messaging panel controller for the local Meshpoint dashboard.
  * Manages the two-column layout (sidebar + chat), tab switching,
- * protocol filtering, WebSocket event routing, and send orchestration.
+ * protocol filtering, monitor mode, WebSocket event routing, and
+ * send orchestration.
  */
 class MessagingPanel {
     constructor() {
@@ -10,6 +11,8 @@ class MessagingPanel {
         this._chat = null;
         this._activeConvo = null;
         this._unreadTotal = 0;
+        this._monitorMode = false;
+        this._txStatus = null;
     }
 
     init() {
@@ -20,11 +23,15 @@ class MessagingPanel {
         if (!panel) return;
 
         panel.innerHTML = `
+            <div id="msg-tx-banner" class="msg-tx-banner" style="display:none"></div>
             <div class="messaging">
                 <div class="msg-sidebar">
                     <div class="msg-sidebar__header">
                         <span class="msg-sidebar__title">Messages</span>
-                        <button class="msg-sidebar__new-btn" id="msg-new-btn">+ New</button>
+                        <div class="msg-sidebar__actions">
+                            <button class="msg-sidebar__monitor-btn" id="msg-monitor-btn" title="Monitor: show overheard DMs">&#x1F441;</button>
+                            <button class="msg-sidebar__new-btn" id="msg-new-btn">+ New</button>
+                        </div>
                     </div>
                     <div class="msg-protocol-toggle">
                         <button class="msg-protocol-toggle__btn msg-protocol-toggle__btn--active" data-filter="all">All</button>
@@ -47,6 +54,14 @@ class MessagingPanel {
             this._contacts.openContactPicker();
         });
 
+        document.getElementById('msg-monitor-btn').addEventListener('click', () => {
+            this._monitorMode = !this._monitorMode;
+            const btn = document.getElementById('msg-monitor-btn');
+            btn.classList.toggle('msg-sidebar__monitor-btn--active', this._monitorMode);
+            btn.title = this._monitorMode ? 'Monitor ON: showing overheard DMs' : 'Monitor: show overheard DMs';
+            this._contacts.load(this._monitorMode);
+        });
+
         panel.querySelectorAll('.msg-protocol-toggle__btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 panel.querySelectorAll('.msg-protocol-toggle__btn').forEach(b => b.classList.remove('msg-protocol-toggle__btn--active'));
@@ -56,13 +71,13 @@ class MessagingPanel {
         });
 
         this._setupWebSocket();
-        this._contacts.load();
+        this._contacts.load(this._monitorMode);
         this._loadStatus();
     }
 
     onActivated() {
         if (!this._initialized) this.init();
-        this._contacts.load();
+        this._contacts.load(this._monitorMode);
     }
 
     _onConversationSelected(convo) {
@@ -88,8 +103,15 @@ class MessagingPanel {
                     channel: convo.channel || 0,
                 }),
             });
-            const result = await res.json();
 
+            if (!res.ok) {
+                const errBody = await res.json().catch(() => ({}));
+                const reason = errBody.detail || errBody.error || `HTTP ${res.status}`;
+                this._chat.updateMessageStatus(tempMsg.id, `failed: ${reason}`, '');
+                return;
+            }
+
+            const result = await res.json();
             if (result.success) {
                 this._chat.updateMessageStatus(tempMsg.id, 'sent', result.packet_id);
                 this._contacts.addOrUpdateConversation({
@@ -101,20 +123,27 @@ class MessagingPanel {
                     timestamp: new Date().toISOString(),
                 });
             } else {
-                this._chat.updateMessageStatus(tempMsg.id, `failed: ${result.error}`, '');
+                const reason = result.error || 'unknown error';
+                this._chat.updateMessageStatus(tempMsg.id, `failed: ${reason}`, '');
             }
         } catch (e) {
             console.error('Send failed:', e);
-            this._chat.updateMessageStatus(tempMsg.id, 'error', '');
+            this._chat.updateMessageStatus(tempMsg.id, 'network error', '');
         }
     }
 
     _setupWebSocket() {
         window.concentratorWS.on('message_received', (data) => {
+            const isOverheard = data.direction === 'overheard';
+
+            if (isOverheard && !this._monitorMode) {
+                return;
+            }
+
             if (this._activeConvo && data.node_id === this._activeConvo.node_id) {
                 this._chat.addMessage({
                     id: Date.now(),
-                    direction: 'received',
+                    direction: data.direction || 'received',
                     text: data.text,
                     node_id: data.node_id,
                     node_name: data.node_name || '',
@@ -123,10 +152,12 @@ class MessagingPanel {
                     timestamp: new Date().toISOString(),
                     status: 'delivered',
                     packet_id: data.packet_id || '',
+                    source_id: data.source_id || '',
+                    destination_id: data.destination_id || '',
                 });
             }
             this._contacts.addOrUpdateConversation(data);
-            this._updateUnreadBadge();
+            if (!isOverheard) this._updateUnreadBadge();
         });
 
         window.concentratorWS.on('message_sent', (data) => {
@@ -141,14 +172,42 @@ class MessagingPanel {
         try {
             const res = await fetch('/api/messages/status');
             const status = await res.json();
-            const mt = status.meshtastic || {};
-            const mc = status.meshcore || {};
-            console.log(
-                `TX status: MT=${mt.enabled ? 'ON' : 'OFF'} (${mt.node_id}), MC=${mc.connected ? 'CONNECTED' : 'OFF'}`
-            );
+            this._txStatus = status;
+            this._renderTxBanner(status);
         } catch (e) {
-            console.log('TX status unavailable');
+            this._renderTxBanner(null);
         }
+    }
+
+    _renderTxBanner(status) {
+        const banner = document.getElementById('msg-tx-banner');
+        if (!banner) return;
+
+        if (!status) {
+            banner.style.display = 'block';
+            banner.className = 'msg-tx-banner msg-tx-banner--error';
+            banner.innerHTML = 'TX status unavailable';
+            return;
+        }
+
+        const mt = status.meshtastic || {};
+        const mc = status.meshcore || {};
+
+        if (!mt.enabled && !mc.connected) {
+            banner.style.display = 'block';
+            banner.className = 'msg-tx-banner msg-tx-banner--warn';
+            banner.innerHTML = 'TX not configured. <a href="#" onclick="document.querySelector(\'[data-tab=radio]\').click();return false">Open Radio tab</a> to enable.';
+            return;
+        }
+
+        if (mt.enabled && !mt.node_id) {
+            banner.style.display = 'block';
+            banner.className = 'msg-tx-banner msg-tx-banner--warn';
+            banner.innerHTML = 'Node ID not set. <a href="#" onclick="document.querySelector(\'[data-tab=radio]\').click();return false">Set in Radio tab</a>.';
+            return;
+        }
+
+        banner.style.display = 'none';
     }
 
     _updateUnreadBadge() {
