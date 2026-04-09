@@ -48,7 +48,7 @@ See the [Onboarding Guide](ONBOARDING.md#changing-meshcore-radio-frequency) for 
 ```yaml
 capture:
   sources:
-    - concentrator             # SX1302/SX1303 8-channel LoRa
+    - concentrator             # SX1302/SX1303 LoRa concentrator
     - meshcore_usb             # optional MeshCore USB companion
   meshcore_usb:
     auto_detect: true          # scans /dev/ttyUSB* and /dev/ttyACM*

@@ -23,7 +23,7 @@
 
 ## What Is This?
 
-A Raspberry Pi-based LoRa listener that captures traffic from **Meshtastic** and **MeshCore** mesh networks simultaneously. The SX1302/SX1303 concentrator listens on **8 LoRa channels** across all spreading factors at once, while an optional MeshCore USB companion monitors MeshCore traffic on its own frequency.
+A Raspberry Pi-based LoRa listener that captures traffic from **Meshtastic** and **MeshCore** mesh networks simultaneously. The SX1302/SX1303 concentrator provides a dedicated, high-sensitivity LoRa radio front-end optimized for passive reception, while an optional MeshCore USB companion monitors MeshCore traffic on its own frequency.
 
 Packets are captured, decrypted, stored locally, and shown on a real-time dashboard. Optionally, everything syncs upstream to [Meshradar](https://meshradar.io) for aggregated city-wide mesh intelligence.
 
@@ -31,8 +31,7 @@ Packets are captured, decrypted, stored locally, and shown on a real-time dashbo
 
 | | Standard Node | Meshpoint |
 |---|---|---|
-| **Channels** | 1 | 8 |
-| **Demodulators** | 1 | 16 (multi-SF) |
+| **Radio** | Single transceiver | SX1302 concentrator-grade receiver |
 | **Role** | Participant | Passive observer |
 | **Packet visibility** | Own traffic | Everything in range |
 | **Storage** | None | SQLite with retention |
@@ -42,7 +41,7 @@ Packets are captured, decrypted, stored locally, and shown on a real-time dashbo
 
 ## Features
 
-**Dual-protocol capture.** Meshtastic and MeshCore traffic captured simultaneously. The SX1302 handles Meshtastic on 8 channels (SF7-SF12), while a USB MeshCore companion covers MeshCore on its own frequency.
+**Dual-protocol capture.** Meshtastic and MeshCore traffic captured simultaneously. The SX1302 concentrator handles Meshtastic reception, while a USB MeshCore companion covers MeshCore on its own frequency.
 
 **Full packet decoding.** 14 Meshtastic portnums decoded: TEXT, POSITION, NODEINFO, TELEMETRY, ROUTING, ADMIN, WAYPOINT, DETECTION_SENSOR, PAXCOUNTER, STORE_FORWARD, RANGE_TEST, TRACEROUTE, NEIGHBORINFO, and MAP_REPORT. 6 MeshCore message types decoded. Device roles (CLIENT, ROUTER, REPEATER, TRACKER, SENSOR) extracted from NodeInfo.
 
@@ -141,7 +140,7 @@ Open `http://<pi-ip>:8080` for the local dashboard.
 ┌──────────┐    ┌──────────┐    ┌────────────┴────────────┐
 │Meshtastic│    │ SX1302/  │    │    Meshpoint (Pi 4)      │
 │ packets  │───▶│ SX1303   │───▶│                          │
-│ (OTA)    │    │ 8-ch RX  │    │  Capture → Decode → API  │
+│ (OTA)    │    │ RX       │    │  Capture → Decode → API  │
 └──────────┘    └──────────┘    │              │           │
                                 │           Dashboard     │
 ┌──────────┐    ┌──────────┐    │          (port 8080)    │

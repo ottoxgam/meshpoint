@@ -226,7 +226,7 @@ Other regions prompt for custom frequency entry. You can also change the MeshCor
 After setup, both capture sources start automatically on boot. You'll see them in the startup banner:
 
 ```
-Source  concentrator (SX1302 8-ch), MeshCore USB node
+Source  concentrator (SX1302), MeshCore USB node
 ```
 
 ### Changing MeshCore Radio Frequency
@@ -463,7 +463,7 @@ The SX1250's digital SPI interface can recover while the RF receive path remains
    Your Mesh Point (Raspberry Pi)
    ┌──────────────────────────────────┐
    │  SX1302/SX1303 (SPI)              │
-   │    └─ Meshtastic 8-ch RX         │
+   │    └─ Meshtastic RX              │
    │  MeshCore companion (USB serial)  │
    │    └─ MeshCore single-ch RX      │
    │  SX1262 Radio (USB serial)       │
