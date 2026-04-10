@@ -371,8 +371,9 @@ class TxService:
             dest_lower = destination.lower()
             if dest_lower in ("broadcast", "all", "ffff", "ffffffff", "0"):
                 return BROADCAST_ADDR_MT
+            raw = destination.lstrip("!")
             try:
-                return int(destination, 16) if destination.startswith("!") else int(destination)
+                return int(raw, 16)
             except ValueError:
                 return BROADCAST_ADDR_MT
         if destination == 0:

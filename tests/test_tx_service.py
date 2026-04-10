@@ -53,13 +53,17 @@ class TestResolveDestination(unittest.TestCase):
         result = TxService._resolve_destination("ffffffff", Protocol.MESHTASTIC)
         self.assertEqual(result, BROADCAST_ADDR_MT)
 
-    def test_non_numeric_string_falls_to_broadcast(self):
+    def test_hex_node_id(self):
         result = TxService._resolve_destination("deadbeef", Protocol.MESHTASTIC)
-        self.assertEqual(result, BROADCAST_ADDR_MT)
+        self.assertEqual(result, 0xDEADBEEF)
 
-    def test_numeric_string_parsed_as_int(self):
-        result = TxService._resolve_destination("12345678", Protocol.MESHTASTIC)
-        self.assertEqual(result, 12345678)
+    def test_hex_node_id_with_bang(self):
+        result = TxService._resolve_destination("!bdd391b5", Protocol.MESHTASTIC)
+        self.assertEqual(result, 0xBDD391B5)
+
+    def test_non_hex_string_falls_to_broadcast(self):
+        result = TxService._resolve_destination("not-a-node", Protocol.MESHTASTIC)
+        self.assertEqual(result, BROADCAST_ADDR_MT)
 
     def test_integer_passthrough(self):
         result = TxService._resolve_destination(0x12345678, Protocol.MESHTASTIC)
