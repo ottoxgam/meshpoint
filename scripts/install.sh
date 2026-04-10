@@ -378,6 +378,7 @@ fi
 # Grant access to SPI, UART, GPIO, and I2C
 usermod -a -G spi,gpio,dialout,i2c meshpoint 2>/dev/null || true
 chown -R meshpoint:meshpoint "${MESHPOINT_DIR}/data"
+chown -R meshpoint:meshpoint "${MESHPOINT_DIR}/config"
 
 # ── 9. Configure journald log rotation ─────────────────────────────
 
