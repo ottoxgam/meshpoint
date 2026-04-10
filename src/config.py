@@ -115,6 +115,24 @@ class MqttConfig:
 
 
 @dataclass
+class TransmitConfig:
+    """Native LoRa transmission settings.
+
+    When enabled, the Meshpoint can send Meshtastic messages through
+    the onboard SX1261 radio and MeshCore messages through the USB
+    companion. Disabled by default: opt-in via local.yaml.
+    """
+
+    enabled: bool = False
+    node_id: Optional[int] = None
+    tx_power_dbm: int = 14
+    max_duty_cycle_percent: float = 1.0
+    long_name: str = "Mesh Point"
+    short_name: str = "MPNT"
+    hop_limit: int = 3
+
+
+@dataclass
 class AppConfig:
     radio: RadioConfig = field(default_factory=RadioConfig)
     meshtastic: MeshtasticConfig = field(default_factory=MeshtasticConfig)
@@ -126,6 +144,7 @@ class AppConfig:
     device: DeviceConfig = field(default_factory=DeviceConfig)
     relay: RelayConfig = field(default_factory=RelayConfig)
     mqtt: MqttConfig = field(default_factory=MqttConfig)
+    transmit: TransmitConfig = field(default_factory=TransmitConfig)
 
 
 def _merge_dataclass(instance, overrides: dict):
@@ -161,6 +180,7 @@ def _apply_yaml(cfg: AppConfig, path: Path) -> None:
         "device": cfg.device,
         "relay": cfg.relay,
         "mqtt": cfg.mqtt,
+        "transmit": cfg.transmit,
     }
 
     for section_name, section_instance in section_map.items():
@@ -193,6 +213,42 @@ def load_config(config_path: Optional[str] = None) -> AppConfig:
     _apply_yaml(cfg, _validated_config_path(local))
 
     return cfg
+
+
+def _get_local_yaml_path() -> Path:
+    """Resolve the local.yaml path used for user overrides."""
+    raw = os.environ.get("CONCENTRATOR_CONFIG", "config/local.yaml")
+    return _validated_config_path(raw)
+
+
+def save_section_to_yaml(section: str, values: dict) -> None:
+    """Merge values into a section of local.yaml without destroying other sections.
+
+    Reads the existing file (if any), updates only the specified section,
+    and writes back. Creates the file if it doesn't exist.
+    """
+    path = _get_local_yaml_path()
+    existing: dict = {}
+    if path.exists():
+        with open(path, "r") as fh:
+            existing = yaml.safe_load(fh) or {}
+
+    if section not in existing:
+        existing[section] = {}
+    if isinstance(existing[section], dict):
+        existing[section].update(values)
+    else:
+        existing[section] = values
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        with open(path, "w") as fh:
+            yaml.dump(existing, fh, default_flow_style=False, sort_keys=False)
+    except PermissionError:
+        raise PermissionError(
+            f"Cannot write to {path}. "
+            f"Fix with: sudo chown pi:pi {path}"
+        )
 
 
 def validate_activation(config: AppConfig) -> None:
