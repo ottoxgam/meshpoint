@@ -6,7 +6,7 @@
 
 <p align="center"><strong>Open-source Meshtastic base station with native TX/RX, 8-channel concentrator, and browser-based messaging.</strong><br>Runs on Raspberry Pi 4 + SX1302/SX1303. Supports US915, EU868, ANZ915, IN865, KR920, and SG923.</p>
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-green.svg)](https://www.python.org/)
 [![Platform: Raspberry Pi](https://img.shields.io/badge/platform-Raspberry%20Pi%204-red.svg)](https://www.raspberrypi.com/)
 [![Discord](https://img.shields.io/badge/Discord-Join-5865F2?logo=discord&logoColor=white)](https://discord.gg/Cfuc6Cp4wM)
@@ -270,7 +270,7 @@ AI-assisted contributions are allowed, but contributors should review and unders
 
 ## License
 
-MIT: see [LICENSE](LICENSE). Compiled core modules are distributed separately under a commercial license.
+AGPL-3.0: see [LICENSE](LICENSE). Compiled core modules are distributed as pre-built binaries under the same license.
 
 ---
 
