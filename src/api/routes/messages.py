@@ -145,9 +145,11 @@ async def delete_all_messages():
 async def get_channels():
     default_name = "LongFast"
     if _config:
-        sf = _config.radio.spreading_factor
-        bw = int(_config.radio.bandwidth_khz)
-        default_name = PRESET_DISPLAY_NAMES.get((sf, bw), "Custom")
+        default_name = _config.meshtastic.primary_channel_name
+        if not default_name:
+            sf = _config.radio.spreading_factor
+            bw = int(_config.radio.bandwidth_khz)
+            default_name = PRESET_DISPLAY_NAMES.get((sf, bw), "Custom")
 
     channels = [
         {
