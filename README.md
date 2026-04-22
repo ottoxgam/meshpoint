@@ -241,12 +241,26 @@ sudo systemctl restart meshpoint
 
 ---
 
-## Documentation
+## Support and documentation
 
+Start with the doc that matches what you are trying to do.
+
+**Setup and configuration**
 - **[Onboarding Guide](docs/ONBOARDING.md):** step-by-step from empty Pi to running Meshpoint
-- **[Configuration Guide](docs/CONFIGURATION.md):** all config options, private channels, relay, upstream, radio tuning
-- **[Troubleshooting](docs/TROUBLESHOOTING.md):** common issues, recovery, and diagnostics
+- **[Hardware Matrix](docs/HARDWARE-MATRIX.md):** RAK V2 vs SenseCap M1 vs DIY, MeshCore companion radios, antennas, what's not supported
+- **[Configuration Guide](docs/CONFIGURATION.md):** all config options, private channels, relay, upstream, MQTT, radio tuning
+- **[Radio Config Explained](docs/RADIO-CONFIG-EXPLAINED.md):** the "why" behind region, spreading factor, bandwidth, custom slots, Part 15 awareness
+- **[MQTT and Meshradar](docs/MQTT-AND-MESHRADAR.md):** the two cloud paths side-by-side, what data flows where, privacy posture
+
+**When something goes wrong**
+- **[FAQ](docs/FAQ.md):** quick answers to common questions
+- **[Common Errors](docs/COMMON-ERRORS.md):** searchable catalog of error messages with cause and fix
+- **[Troubleshooting](docs/TROUBLESHOOTING.md):** longer diagnostic flows, recovery from corrupted installs
+
+**Project**
 - **[Changelog](docs/CHANGELOG.md):** version history and release notes
+- **[GitHub Issues](https://github.com/KMX415/meshpoint/issues)** and **[Discussions](https://github.com/KMX415/meshpoint/discussions)** for bugs and questions
+- **[Discord](https://discord.gg/BnhSeFXVY8)** for real-time community support
 
 ---
 
