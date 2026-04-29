@@ -41,7 +41,7 @@ dashboard:
   static_dir: "frontend"
 
 device:
-  device_name: "Mesh Point"
+  device_name: "Meshpoint"
   latitude: 0.0
   longitude: 0.0
   altitude: 25
@@ -68,8 +68,9 @@ transmit:
   enabled: false
   node_id: null             # auto-generated 4-byte Meshtastic node ID
   tx_power_dbm: 14          # conservative default (dBm)
-  max_duty_cycle_percent: 1.0  # EU-safe default
-  long_name: "Mesh Point"
+  # max_duty_cycle_percent omitted: auto-derives from radio.region
+  # (10% US/ANZ/KR/SG_923, 1% EU_868/IN). Override here to pin.
+  long_name: "Meshpoint"
   short_name: "MPNT"
   hop_limit: 3
   nodeinfo:

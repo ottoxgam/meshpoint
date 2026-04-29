@@ -80,7 +80,7 @@ class TestCrossProtocolNameCleanup(unittest.TestCase):
     def test_idempotent_when_data_clean(self):
         """No MT rows match any mc:% long_name. Migration is a no-op."""
         db = self._connect_with_seed([
-            {"node_id": "deadbeef", "long_name": "Mesh Point",
+            {"node_id": "deadbeef", "long_name": "Meshpoint",
              "short_name": "MPNT", "protocol": "meshtastic"},
             {"node_id": "mc:Guzii_RedV4", "long_name": "Guzii_RedV4",
              "protocol": "meshcore"},
@@ -90,7 +90,7 @@ class TestCrossProtocolNameCleanup(unittest.TestCase):
         _run(db.commit())
 
         row = self._select(db, "deadbeef")
-        self.assertEqual(row["long_name"], "Mesh Point")
+        self.assertEqual(row["long_name"], "Meshpoint")
         self.assertEqual(row["short_name"], "MPNT")
 
         _run(db.disconnect())
@@ -118,7 +118,7 @@ class TestCrossProtocolNameCleanup(unittest.TestCase):
     def test_skips_when_no_mc_contacts_exist(self):
         """A fresh-install DB without any mc:% rows runs cleanly."""
         db = self._connect_with_seed([
-            {"node_id": "deadbeef", "long_name": "Mesh Point",
+            {"node_id": "deadbeef", "long_name": "Meshpoint",
              "short_name": "MPNT", "protocol": "meshtastic"},
             {"node_id": "557673f2", "long_name": "Some MT Node",
              "protocol": "meshtastic"},
@@ -128,7 +128,7 @@ class TestCrossProtocolNameCleanup(unittest.TestCase):
         _run(db.commit())
 
         row = self._select(db, "deadbeef")
-        self.assertEqual(row["long_name"], "Mesh Point")
+        self.assertEqual(row["long_name"], "Meshpoint")
 
         _run(db.disconnect())
 

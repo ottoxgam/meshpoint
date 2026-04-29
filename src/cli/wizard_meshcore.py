@@ -80,7 +80,7 @@ def maybe_add_meshcore_usb(
         print(f"          - {port}")
     print()
     print("        If you have a MeshCore device (Heltec, T-Beam, etc.) plugged")
-    print("        in via USB, Mesh Point can monitor its traffic automatically.")
+    print("        in via USB, Meshpoint can monitor its traffic automatically.")
     print()
 
     if not confirm_fn("Enable MeshCore USB monitoring?"):

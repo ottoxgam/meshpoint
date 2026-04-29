@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-WiFi network watchdog for Mesh Point.
+WiFi network watchdog for Meshpoint.
 
 Standalone service (no meshpoint imports, stdlib only) that:
   1. Disables WiFi power save on startup

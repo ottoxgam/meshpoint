@@ -22,7 +22,33 @@ DUTY_CYCLE_LIMITS = {
     "SG_923": 100.0,
 }
 
+# Conservative out-of-the-box cap per region. Sits well under the
+# regulatory ceiling for unrestricted bands (US/ANZ/KR/SG_923 have no
+# duty cycle rule) and matches the regulatory cap for restricted ones
+# (EU_868 and IN are 1%). Users can override in local.yaml.
+MESHPOINT_DUTY_DEFAULTS = {
+    "US": 10.0,
+    "EU_868": 1.0,
+    "ANZ": 10.0,
+    "IN": 1.0,
+    "KR": 10.0,
+    "SG_923": 10.0,
+}
+
 DEFAULT_WINDOW_SECONDS = 3600
+
+
+def resolve_max_duty_percent(region: str, configured: float | None) -> float:
+    """Resolve the effective max duty cycle for a region.
+
+    If the user set ``transmit.max_duty_cycle_percent`` in local.yaml,
+    that value wins. Otherwise the regional Meshpoint default applies
+    (10% in US/ANZ/KR/SG_923, 1% in EU_868/IN). Unknown regions fall
+    back to a safe 1%.
+    """
+    if configured is not None:
+        return configured
+    return MESHPOINT_DUTY_DEFAULTS.get(region, 1.0)
 
 
 @dataclass

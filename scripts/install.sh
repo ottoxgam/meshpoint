@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 #
-# Mesh Radar -- Mesh Point Installer
+# Meshpoint Installer
 #
-# Prepares a fresh Raspberry Pi for Mesh Point operation:
+# Prepares a fresh Raspberry Pi for Meshpoint operation:
 #   1. System packages and build tools
 #   2. SPI / UART / GPS kernel config
 #   3. SX1302 HAL (libloragw) compilation
@@ -84,7 +84,7 @@ if [ -f "$BOOT_CONFIG" ]; then
     if ! grep -q "dtoverlay=disable-bt" "$BOOT_CONFIG"; then
         info "Adding dtoverlay=disable-bt to ${BOOT_CONFIG}"
         echo "" >> "$BOOT_CONFIG"
-        echo "# Mesh Point: free primary UART for GPS" >> "$BOOT_CONFIG"
+        echo "# Meshpoint: free primary UART for GPS" >> "$BOOT_CONFIG"
         echo "dtoverlay=disable-bt" >> "$BOOT_CONFIG"
     else
         info "dtoverlay=disable-bt already present"
@@ -350,7 +350,7 @@ if [ -f "$HAL_SRC" ]; then
     bash "${SCRIPT_DIR}/scripts/patch_hal.sh"
 fi
 
-# ── 5. Install Mesh Point application ──────────────────────────────
+# ── 5. Install Meshpoint application ──────────────────────────────
 
 info "Installing Meshpoint to ${MESHPOINT_DIR}..."
 mkdir -p "$MESHPOINT_DIR"
@@ -454,7 +454,7 @@ ln -sf "${MESHPOINT_DIR}/${CLI_SCRIPT}" /usr/local/bin/meshpoint
 
 echo ""
 echo "==========================================="
-echo "  Mesh Point installation complete!"
+echo "  Meshpoint installation complete!"
 echo "==========================================="
 echo ""
 echo "  Next steps:"

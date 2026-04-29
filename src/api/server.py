@@ -90,16 +90,16 @@ def create_app(config: AppConfig | None = None) -> FastAPI:
 
         _init_routes(pipeline, config, identity, tx_service, message_repo)
         print_banner(config)
-        logger.info("Mesh Point started -- listening for packets")
+        logger.info("Meshpoint started -- listening for packets")
         yield
         if nodeinfo_broadcaster is not None:
             await nodeinfo_broadcaster.stop()
         await upstream.stop()
         await pipeline.stop()
-        logger.info("Mesh Point stopped")
+        logger.info("Meshpoint stopped")
 
     app = FastAPI(
-        title="Mesh Radar - Mesh Point",
+        title="Meshpoint",
         version="0.1.0",
         lifespan=lifespan,
     )
@@ -208,12 +208,15 @@ def _build_tx_service(
         logger.info("Transmit disabled in config")
         return None
 
-    from src.transmit.duty_cycle import DutyCycleTracker
+    from src.transmit.duty_cycle import DutyCycleTracker, resolve_max_duty_percent
     from src.transmit.meshcore_tx_client import MeshCoreTxClient
 
     duty = DutyCycleTracker(
         region=config.radio.region,
-        max_duty_percent=config.transmit.max_duty_cycle_percent,
+        max_duty_percent=resolve_max_duty_percent(
+            config.radio.region,
+            config.transmit.max_duty_cycle_percent,
+        ),
     )
     meshcore_tx = MeshCoreTxClient()
     mc_source = _find_meshcore_source(coord)

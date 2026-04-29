@@ -37,11 +37,6 @@ Page `<title>` rule:
   Meshpoint-branded short string). It must not introduce a new
   tagline or marketing line.
 
-> **Known bug, separate fix.** The current
-> `frontend/index.html` `<title>` reads `Mesh Radar - Mesh Point`,
-> which violates the brand rule. A polish PR will correct this.
-> Do not bundle that change with unrelated work.
-
 ---
 
 ## Color Tokens

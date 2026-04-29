@@ -23,6 +23,7 @@ from src.radio.presets import (
     get_preset,
     preset_from_params,
 )
+from src.transmit.duty_cycle import resolve_max_duty_percent
 
 logger = logging.getLogger(__name__)
 
@@ -114,7 +115,12 @@ async def get_config():
             "node_id_hex": node_id_hex,
             "node_id_source": node_id_source,
             "tx_power_dbm": tx.tx_power_dbm,
-            "max_duty_cycle_percent": tx.max_duty_cycle_percent,
+            "max_duty_cycle_percent": resolve_max_duty_percent(
+                radio.region, tx.max_duty_cycle_percent
+            ),
+            "max_duty_cycle_source": (
+                "config" if tx.max_duty_cycle_percent is not None else "auto"
+            ),
             "long_name": tx.long_name,
             "short_name": tx.short_name,
             "hop_limit": tx.hop_limit,
