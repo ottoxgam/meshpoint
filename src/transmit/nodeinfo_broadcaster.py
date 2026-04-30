@@ -117,9 +117,14 @@ class NodeInfoBroadcaster:
 
         Before the first broadcast, this is start time + startup delay.
         After the first broadcast, it's last_sent_at + interval.
-        Returns ``None`` if the broadcaster hasn't been started yet.
+        Returns ``None`` if the broadcaster hasn't been started yet
+        OR if the loop is paused (``interval == 0``); a paused loop
+        has no scheduled next broadcast and the frontend countdown
+        should render the paused state, not a stale timestamp.
         """
         if not self._running:
+            return None
+        if self._interval == 0:
             return None
         if self._last_sent_at is not None:
             return self._last_sent_at + timedelta(seconds=self._interval)

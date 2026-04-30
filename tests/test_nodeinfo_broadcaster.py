@@ -239,6 +239,29 @@ class TestNodeInfoBroadcasterTelemetry(unittest.IsolatedAsyncioTestCase):
         await b.stop()
         self.assertIsNone(b.next_due_at)
 
+    async def test_next_due_is_none_when_paused(self):
+        """interval=0 (paused) -> no scheduled broadcast, so None.
+
+        Returning ``last_sent_at + 0`` would be a past timestamp and
+        the dashboard countdown would render 'broadcasting...' for a
+        loop that's actually idle.
+        """
+        tx = _FakeTxService(results=[_ok()])
+        b = NodeInfoBroadcaster(
+            tx, "Long", "SHRT",
+            startup_delay_seconds=0,
+            interval_seconds=10_000,
+        )
+        await b.start()
+        try:
+            await asyncio.sleep(0.05)
+            self.assertIsNotNone(b.last_sent_at)
+            self.assertIsNotNone(b.next_due_at)
+            b.set_interval(0)
+            self.assertIsNone(b.next_due_at)
+        finally:
+            await b.stop()
+
 
 class TestClampIntervalMinutes(unittest.TestCase):
     """Bounds enforcement for transmit.nodeinfo.interval_minutes.

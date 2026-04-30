@@ -30,12 +30,19 @@ class RadioNodeInfoCard {
         this._root = null;
         this._timer = null;
         this._zeroSince = null;
-        this._state = {
+        // Saved state: what the live broadcaster is doing. Drives the
+        // countdown, lamp, interval label, and Send Now next_due math.
+        this._saved = {
             interval_minutes: 0,
             running: false,
             last_sent_at: null,
             next_due_at: null,
         };
+        // Draft state: what the user has selected in chips/input but
+        // not yet saved. Save reads draft; everything else reads saved.
+        // Splitting these prevents a chip click from clobbering the
+        // live state (which then snap-back-revert via api.refresh).
+        this._draft = { interval_minutes: 0 };
     }
 
     mount(rootEl) {
@@ -91,14 +98,17 @@ class RadioNodeInfoCard {
 
     render(config) {
         const ni = config.nodeinfo || {};
-        this._state.interval_minutes = ni.interval_minutes || 0;
-        this._state.running = !!ni.running;
-        this._state.last_sent_at = _parseTimestamp(ni.last_sent_at);
-        this._state.next_due_at = _parseTimestamp(ni.next_due_at);
+        this._saved.interval_minutes = ni.interval_minutes || 0;
+        this._saved.running = !!ni.running;
+        this._saved.last_sent_at = _parseTimestamp(ni.last_sent_at);
+        this._saved.next_due_at = _parseTimestamp(ni.next_due_at);
+        // Reset draft to the freshly-fetched saved value on every
+        // render. After a successful save the UI snaps to live state.
+        this._draft.interval_minutes = this._saved.interval_minutes;
         this._zeroSince = null;
 
-        this._root.querySelector('#r-ni-input').value = String(this._state.interval_minutes);
-        this._setActiveChip(this._state.interval_minutes);
+        this._root.querySelector('#r-ni-input').value = String(this._draft.interval_minutes);
+        this._setActiveChip(this._draft.interval_minutes);
         this._renderIntervalLabel();
         this._renderLamp();
         this._tick();
@@ -120,7 +130,7 @@ class RadioNodeInfoCard {
 
     _renderIntervalLabel() {
         const el = this._root.querySelector('#r-ni-interval-label');
-        const minutes = this._state.interval_minutes;
+        const minutes = this._saved.interval_minutes;
         el.textContent = minutes === 0 ? 'paused' : _formatDuration(minutes * 60);
     }
 
@@ -132,10 +142,10 @@ class RadioNodeInfoCard {
             'status-lamp--warn',
             'status-lamp--off',
         );
-        if (this._state.interval_minutes === 0) {
+        if (this._saved.interval_minutes === 0) {
             lamp.classList.add('status-lamp--off');
             label.textContent = 'PAUSED';
-        } else if (this._state.running) {
+        } else if (this._saved.running) {
             lamp.classList.add('status-lamp--ready');
             label.textContent = 'ACTIVE';
         } else {
@@ -157,11 +167,8 @@ class RadioNodeInfoCard {
                 e.preventDefault();
                 const minutes = parseInt(chip.dataset.minutes, 10);
                 this._root.querySelector('#r-ni-input').value = String(minutes);
-                this._state.interval_minutes = minutes;
+                this._draft.interval_minutes = minutes;
                 this._setActiveChip(minutes);
-                this._renderIntervalLabel();
-                this._renderLamp();
-                this._tick();
             });
         });
 
@@ -171,9 +178,7 @@ class RadioNodeInfoCard {
             if (isNaN(minutes)) return;
             this._setActiveChip(minutes);
             if (minutes === 0 || (minutes >= 5 && minutes <= 1440)) {
-                this._state.interval_minutes = minutes;
-                this._renderIntervalLabel();
-                this._renderLamp();
+                this._draft.interval_minutes = minutes;
             }
         });
 
@@ -187,9 +192,7 @@ class RadioNodeInfoCard {
     }
 
     async _save() {
-        const minutes = parseInt(
-            this._root.querySelector('#r-ni-input').value, 10,
-        );
+        const minutes = this._draft.interval_minutes;
         if (isNaN(minutes) || (minutes !== 0 && (minutes < 5 || minutes > 1440))) {
             this._api.toast('Interval must be 0 or 5-1440 minutes');
             return;
@@ -214,10 +217,10 @@ class RadioNodeInfoCard {
         if (!result) return;
         if (result.success) {
             this._api.toast('NodeInfo broadcast sent');
-            this._state.last_sent_at = new Date();
-            if (this._state.interval_minutes > 0) {
-                this._state.next_due_at = new Date(
-                    Date.now() + this._state.interval_minutes * 60 * 1000,
+            this._saved.last_sent_at = new Date();
+            if (this._saved.interval_minutes > 0) {
+                this._saved.next_due_at = new Date(
+                    Date.now() + this._saved.interval_minutes * 60 * 1000,
                 );
             }
             this._tick();
@@ -242,17 +245,17 @@ class RadioNodeInfoCard {
         const valueEl = this._root.querySelector('#r-ni-countdown');
         const lastEl = this._root.querySelector('#r-ni-last span');
 
-        if (this._state.interval_minutes === 0) {
+        if (this._saved.interval_minutes === 0) {
             valueEl.textContent = 'PAUSED';
             valueEl.style.opacity = '0.45';
-            lastEl.textContent = this._state.last_sent_at
-                ? _formatAgo(_secondsAgo(this._state.last_sent_at))
+            lastEl.textContent = this._saved.last_sent_at
+                ? _formatAgo(_secondsAgo(this._saved.last_sent_at))
                 : 'never';
             return;
         }
 
         valueEl.style.opacity = '1';
-        const next = this._state.next_due_at;
+        const next = this._saved.next_due_at;
         if (!next) {
             valueEl.textContent = 'awaiting first send';
         } else {
@@ -267,8 +270,8 @@ class RadioNodeInfoCard {
             }
         }
 
-        lastEl.textContent = this._state.last_sent_at
-            ? _formatAgo(_secondsAgo(this._state.last_sent_at))
+        lastEl.textContent = this._saved.last_sent_at
+            ? _formatAgo(_secondsAgo(this._saved.last_sent_at))
             : 'never';
     }
 
