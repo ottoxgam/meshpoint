@@ -3,15 +3,15 @@
  *
  * Shipped in v0.7.1. Three jobs:
  *   - Display a live countdown to the next NodeInfo broadcast.
- *   - Let the operator change the cadence via preset chips
+ *   - Let the operator change the interval via preset chips
  *     (5m / 30m / 1h / 3h / 6h / 12h / 24h / Off) or a numeric input.
  *   - Provide a "Send Now" button that pushes an immediate broadcast.
  *
- * Cadence is the single knob: setting it to 0 disables the broadcaster
- * entirely (the periodic loop, not TX itself). DMs and replies still
- * work in the disabled state. Cadence changes always require a service
- * restart to take effect, which the orchestrator surfaces via the
- * shared restart bar.
+ * Interval is the single knob: setting it to 0 pauses the broadcaster
+ * (the periodic loop, not TX itself). DMs and replies still work in
+ * the paused state. Interval changes hot-reload the running broadcast
+ * loop and take effect within milliseconds: no service restart is
+ * needed for this knob.
  */
 class RadioNodeInfoCard {
     static PRESETS = [
@@ -58,13 +58,13 @@ class RadioNodeInfoCard {
                     </span>
                     <span class="r-countdown__sub-sep">|</span>
                     <span class="r-countdown__sub-item">
-                        Cadence <span id="r-ni-cadence">--</span>
+                        Interval <span id="r-ni-interval-label">--</span>
                     </span>
                 </div>
             </div>
-            <div class="cadence">
-                <div class="cadence__row">
-                    <div class="cadence__chips" id="r-ni-chips"></div>
+            <div class="interval-chips">
+                <div class="interval-chips__row">
+                    <div class="interval-chips__chips" id="r-ni-chips"></div>
                     <div class="r-input-with-unit">
                         <input type="number" id="r-ni-input"
                                class="r-input r-input--mono r-input--narrow"
@@ -73,8 +73,9 @@ class RadioNodeInfoCard {
                     </div>
                 </div>
                 <p class="r-hint">
-                    0 disables periodic broadcasts (TX still works for DMs and replies).
-                    Otherwise 5-1440 minutes. Cadence changes take effect on next service restart.
+                    0 pauses periodic broadcasts (TX still works for DMs and
+                    replies). Otherwise 5-1440 minutes. Saved intervals take
+                    effect immediately: no service restart required.
                 </p>
             </div>
             <div class="r-card__actions">
@@ -98,7 +99,7 @@ class RadioNodeInfoCard {
 
         this._root.querySelector('#r-ni-input').value = String(this._state.interval_minutes);
         this._setActiveChip(this._state.interval_minutes);
-        this._renderCadenceLabel();
+        this._renderIntervalLabel();
         this._renderLamp();
         this._tick();
         this._startTimer();
@@ -117,10 +118,10 @@ class RadioNodeInfoCard {
         }).join('');
     }
 
-    _renderCadenceLabel() {
-        const el = this._root.querySelector('#r-ni-cadence');
+    _renderIntervalLabel() {
+        const el = this._root.querySelector('#r-ni-interval-label');
         const minutes = this._state.interval_minutes;
-        el.textContent = minutes === 0 ? 'disabled' : _formatDuration(minutes * 60);
+        el.textContent = minutes === 0 ? 'paused' : _formatDuration(minutes * 60);
     }
 
     _renderLamp() {
@@ -158,7 +159,7 @@ class RadioNodeInfoCard {
                 this._root.querySelector('#r-ni-input').value = String(minutes);
                 this._state.interval_minutes = minutes;
                 this._setActiveChip(minutes);
-                this._renderCadenceLabel();
+                this._renderIntervalLabel();
                 this._renderLamp();
                 this._tick();
             });
@@ -171,7 +172,7 @@ class RadioNodeInfoCard {
             this._setActiveChip(minutes);
             if (minutes === 0 || (minutes >= 5 && minutes <= 1440)) {
                 this._state.interval_minutes = minutes;
-                this._renderCadenceLabel();
+                this._renderIntervalLabel();
                 this._renderLamp();
             }
         });
@@ -190,7 +191,7 @@ class RadioNodeInfoCard {
             this._root.querySelector('#r-ni-input').value, 10,
         );
         if (isNaN(minutes) || (minutes !== 0 && (minutes < 5 || minutes > 1440))) {
-            this._api.toast('Cadence must be 0 or 5-1440 minutes');
+            this._api.toast('Interval must be 0 or 5-1440 minutes');
             return;
         }
         const result = await this._api.put(
@@ -198,11 +199,11 @@ class RadioNodeInfoCard {
         );
         if (!result) return;
         this._api.toast(
-            minutes === 0 ? 'NodeInfo broadcasts disabled' : 'Cadence saved',
+            minutes === 0 ? 'NodeInfo broadcasts paused' : 'Interval saved',
         );
         if (result.restart_required) {
             this._api.signalRestart(
-                'NodeInfo cadence changes take effect on next service restart.',
+                'Some NodeInfo settings require a service restart to apply.',
             );
         }
         await this._api.refresh();

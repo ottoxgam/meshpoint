@@ -2,7 +2,7 @@
  *
  * Base primitives live in radio.css. This file holds the visual
  * vocabulary specific to individual radio cards (status lamps,
- * duty gauge, NodeInfo countdown, cadence chips, channels table,
+ * duty gauge, NodeInfo countdown, interval chips, channels table,
  * MeshCore companion grid, restart bar). */
 
 /* Status lamp (industrial gauge feel). Used across the radio tab
@@ -307,18 +307,18 @@
 .r-countdown__sub-item span { color: var(--text-secondary); }
 .r-countdown__sub-sep { opacity: 0.4; }
 
-/* Cadence chips (NodeInfo interval presets). The "Off" chip is a
- * visually distinct dashed pill so users see it as the disable
+/* Interval chips (NodeInfo broadcast presets). The "Off" chip is a
+ * visually distinct dashed pill so users see it as the pause
  * affordance rather than another preset. */
 
-.cadence__row {
+.interval-chips__row {
     display: flex;
     align-items: center;
     gap: 0.7rem;
     flex-wrap: wrap;
 }
 
-.cadence__chips {
+.interval-chips__chips {
     display: inline-flex;
     gap: 0.3rem;
     flex-wrap: wrap;
@@ -392,21 +392,35 @@
 }
 
 /* Sticky restart bar shown when any field requires a service
- * restart to take effect. */
+ * restart to take effect. Pinned to the top of the radio scroll
+ * area (the .tab-content scroll container) so it stays visible
+ * as the user scrolls between cards. */
 
 .restart-bar {
     display: none;
     align-items: center;
     gap: 0.7rem;
     padding: 0.65rem 1rem;
-    background: rgba(245, 158, 11, 0.08);
-    border: 1px solid rgba(245, 158, 11, 0.3);
+    background: rgba(245, 158, 11, 0.18);
+    border: 1px solid rgba(245, 158, 11, 0.5);
     border-radius: var(--radius);
     font-size: 0.78rem;
     color: var(--accent-amber);
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+    animation: restart-bar-in 0.22s ease-out;
 }
 
 .restart-bar--visible { display: flex; }
+
+@keyframes restart-bar-in {
+    from { transform: translateY(-6px); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+}
 
 .restart-bar__icon {
     display: inline-flex;

@@ -90,6 +90,10 @@ class NodeInfoBroadcaster:
         self._running = False
         self._started_at: Optional[datetime] = None
         self._last_sent_at: Optional[datetime] = None
+        # Event-driven wake signal for hot-reload of the broadcast
+        # interval. set() from sync or async context; the loop picks
+        # up the new interval within milliseconds.
+        self._interval_changed = asyncio.Event()
 
     @property
     def is_running(self) -> bool:
@@ -154,12 +158,78 @@ class NodeInfoBroadcaster:
         finally:
             self._task = None
 
+    def set_interval(self, minutes: int) -> int:
+        """Hot-reload the broadcast interval. Returns the clamped value.
+
+        Mutates the running broadcast loop in place: the new interval
+        takes effect within milliseconds of this call. Setting to ``0``
+        pauses the loop (no new broadcasts) without stopping it;
+        restoring to a non-zero value resumes immediately. The next
+        broadcast fires at ``last_sent_at + new_interval`` (or right
+        away if that's already in the past).
+
+        Safe to call from any context (sync or async). The loop wakes
+        via an :class:`asyncio.Event` so there's no busy polling.
+        """
+        clamped = clamp_interval_minutes(minutes)
+        previous = self._interval
+        self._interval = clamped * 60
+        if previous != self._interval:
+            logger.info(
+                "NodeInfo interval hot-reloaded: %ds -> %ds",
+                previous, self._interval,
+            )
+        self._interval_changed.set()
+        return clamped
+
+    def _is_due_now(self) -> bool:
+        """True if the broadcast loop should fire now."""
+        if self._interval == 0:
+            return False
+        if self._last_sent_at is None:
+            return True
+        next_due = self._last_sent_at + timedelta(seconds=self._interval)
+        return datetime.now(timezone.utc) >= next_due
+
+    def _sleep_until_next(self) -> float:
+        """Seconds to sleep before the next scheduled broadcast.
+
+        Returns ``0.0`` when the broadcast is already due or overdue
+        so the loop can iterate without sleeping.
+        """
+        if self._interval == 0:
+            return 0.0
+        if self._last_sent_at is None:
+            return float(self._interval)
+        next_due = self._last_sent_at + timedelta(seconds=self._interval)
+        remaining = (next_due - datetime.now(timezone.utc)).total_seconds()
+        return max(0.0, remaining)
+
     async def _loop(self) -> None:
         try:
             await asyncio.sleep(self._startup_delay)
             while self._running:
-                await self._broadcast_once()
-                await asyncio.sleep(self._interval)
+                if self._interval == 0:
+                    self._interval_changed.clear()
+                    await self._interval_changed.wait()
+                    continue
+
+                if self._is_due_now():
+                    await self._broadcast_once()
+                    if not self._running:
+                        break
+
+                self._interval_changed.clear()
+                sleep_seconds = self._sleep_until_next()
+                if sleep_seconds <= 0:
+                    continue
+                try:
+                    await asyncio.wait_for(
+                        self._interval_changed.wait(),
+                        timeout=sleep_seconds,
+                    )
+                except asyncio.TimeoutError:
+                    pass
         except asyncio.CancelledError:
             logger.debug("NodeInfo broadcaster cancelled")
             raise

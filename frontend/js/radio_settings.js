@@ -41,6 +41,15 @@ class RadioSettings {
         panel.innerHTML = `
             <div class="r-stage">
                 <div class="r-shell">
+                    <div class="restart-bar" id="r-restart-bar">
+                        <span class="restart-bar__icon">!</span>
+                        <span class="restart-bar__msg" id="r-restart-msg">
+                            Some changes require a service restart to take effect.
+                        </span>
+                        <button class="r-btn r-btn--warn"
+                                id="r-restart-btn">Restart Service</button>
+                    </div>
+
                     <div class="r-console">
                         <span class="r-console__prompt">admin@meshpoint:~$</span>
                         <span class="r-console__cursor">_</span>
@@ -59,15 +68,6 @@ class RadioSettings {
                     <div id="r-card-nodeinfo"></div>
                     <div id="r-card-channels"></div>
                     <div id="r-card-companion"></div>
-
-                    <div class="restart-bar" id="r-restart-bar">
-                        <span class="restart-bar__icon">!</span>
-                        <span class="restart-bar__msg" id="r-restart-msg">
-                            Some changes require a service restart to take effect.
-                        </span>
-                        <button class="r-btn r-btn--warn"
-                                id="r-restart-btn">Restart Service</button>
-                    </div>
 
                     <div class="r-console-foot">
                         <span class="r-console-foot__hint">

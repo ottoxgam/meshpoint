@@ -2,7 +2,7 @@
  *
  * Tokens come from frontend/css/dashboard.css :root. Per-card
  * component styles (status lamp, duty gauge, NodeInfo countdown,
- * cadence chips, etc.) live in radio_cards.css. Both files are
+ * interval chips, etc.) live in radio_cards.css. Both files are
  * loaded by frontend/index.html. */
 
 /* Page-level shell. The radio tab content is wrapped in

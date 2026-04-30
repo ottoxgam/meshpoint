@@ -96,10 +96,13 @@ class TestNodeInfoBroadcasterLifecycle(unittest.IsolatedAsyncioTestCase):
 
     async def test_interval_runs_multiple_broadcasts(self):
         tx = _FakeTxService(results=[_ok(), _ok(), _ok()])
+        # 1ms interval lets the loop fire several times in a 50ms window.
+        # Note: floats are accepted for fast tests; production callers
+        # always pass clamped int minutes via set_interval().
         b = NodeInfoBroadcaster(
             tx, "Long", "SHRT",
             startup_delay_seconds=0,
-            interval_seconds=0,
+            interval_seconds=0.001,
         )
         await b.start()
         await asyncio.sleep(0.05)
@@ -114,7 +117,7 @@ class TestNodeInfoBroadcasterLifecycle(unittest.IsolatedAsyncioTestCase):
         b = NodeInfoBroadcaster(
             tx, "Long", "SHRT",
             startup_delay_seconds=0,
-            interval_seconds=0,
+            interval_seconds=0.001,
         )
         await b.start()
         await asyncio.sleep(0.05)
@@ -128,7 +131,7 @@ class TestNodeInfoBroadcasterLifecycle(unittest.IsolatedAsyncioTestCase):
         b = NodeInfoBroadcaster(
             tx, "Long", "SHRT",
             startup_delay_seconds=0,
-            interval_seconds=0,
+            interval_seconds=0.001,
         )
         await b.start()
         await asyncio.sleep(0.05)
@@ -290,6 +293,105 @@ class TestNodeInfoConfigDefaults(unittest.TestCase):
 
         ni = NodeInfoConfig()
         self.assertFalse(hasattr(ni, "enabled"))
+
+
+class TestNodeInfoBroadcasterHotReload(unittest.IsolatedAsyncioTestCase):
+    """``set_interval()`` hot-reloads the running broadcast loop.
+
+    No service restart needed for interval changes when the broadcaster
+    is alive (v0.7.1+). Setting ``0`` pauses the loop without stopping
+    it; restoring to a non-zero value resumes within milliseconds.
+    """
+
+    def test_set_interval_updates_interval_seconds(self):
+        tx = _FakeTxService()
+        b = NodeInfoBroadcaster(
+            tx, "Long", "SHRT",
+            startup_delay_seconds=10_000,
+            interval_seconds=10_000,
+        )
+        b.set_interval(30)
+        self.assertEqual(b.interval_seconds, 30 * 60)
+
+    def test_set_interval_clamps_value(self):
+        tx = _FakeTxService()
+        b = NodeInfoBroadcaster(
+            tx, "Long", "SHRT", interval_seconds=10_000,
+        )
+        b.set_interval(99999)
+        self.assertEqual(b.interval_seconds, INTERVAL_MAX_MINUTES * 60)
+        b.set_interval(1)
+        self.assertEqual(b.interval_seconds, INTERVAL_MIN_MINUTES * 60)
+        b.set_interval(0)
+        self.assertEqual(b.interval_seconds, 0)
+
+    def test_set_interval_returns_clamped_value(self):
+        tx = _FakeTxService()
+        b = NodeInfoBroadcaster(
+            tx, "Long", "SHRT", interval_seconds=10_000,
+        )
+        self.assertEqual(b.set_interval(99999), INTERVAL_MAX_MINUTES)
+        self.assertEqual(b.set_interval(0), INTERVAL_DISABLED)
+        self.assertEqual(b.set_interval(30), 30)
+
+    async def test_set_interval_to_zero_pauses_loop(self):
+        """interval=0 is the documented pause sentinel; no broadcasts."""
+        tx = _FakeTxService(results=[_ok()] * 10)
+        b = NodeInfoBroadcaster(
+            tx, "Long", "SHRT",
+            startup_delay_seconds=0,
+            interval_seconds=10_000,
+        )
+        await b.start()
+        try:
+            await asyncio.sleep(0.05)
+            initial_calls = len(tx.calls)
+            self.assertGreaterEqual(initial_calls, 1)
+            b.set_interval(0)
+            await asyncio.sleep(0.1)
+            self.assertEqual(len(tx.calls), initial_calls)
+        finally:
+            await b.stop()
+
+    async def test_set_interval_resume_wakes_paused_loop(self):
+        """set_interval(>0) on a paused loop should wake it within ms."""
+        tx = _FakeTxService(results=[_ok()] * 10)
+        b = NodeInfoBroadcaster(
+            tx, "Long", "SHRT",
+            startup_delay_seconds=0,
+            interval_seconds=0,
+        )
+        await b.start()
+        try:
+            await asyncio.sleep(0.05)
+            self.assertEqual(len(tx.calls), 0)
+            b.set_interval(10_000)
+            await asyncio.sleep(0.05)
+            self.assertGreaterEqual(len(tx.calls), 1)
+        finally:
+            await b.stop()
+
+    async def test_set_interval_shorter_fires_immediately_when_overdue(self):
+        """If new interval makes the next broadcast overdue, fire ASAP."""
+        tx = _FakeTxService(results=[_ok()] * 10)
+        b = NodeInfoBroadcaster(
+            tx, "Long", "SHRT",
+            startup_delay_seconds=0,
+            interval_seconds=10_000,
+        )
+        await b.start()
+        try:
+            await asyncio.sleep(0.05)
+            initial_calls = len(tx.calls)
+            self.assertGreaterEqual(initial_calls, 1)
+            # Bump interval to 1ms so last_sent + new_interval is in the past.
+            b.set_interval(0)
+            b._interval = 0.001
+            b._interval_changed.set()
+            await asyncio.sleep(0.05)
+            self.assertGreater(len(tx.calls), initial_calls)
+        finally:
+            await b.stop()
 
 
 if __name__ == "__main__":
