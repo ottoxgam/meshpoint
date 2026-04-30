@@ -305,15 +305,36 @@ the radio.
 
 ```yaml
 transmit:
-  max_duty_cycle_percent: 1.0
+  # max_duty_cycle_percent omitted: auto-derives from radio.region
 ```
 
-The percent of wall-clock time the radio is permitted to transmit. ETSI
-(Europe) limits unlicensed 868 MHz operation to 1% duty cycle. The default
-1.0 is EU-safe and a reasonable shared-spectrum practice everywhere.
+The percent of wall-clock time the radio is permitted to transmit. When
+the key is absent (or set to `null`) the Meshpoint auto-derives a sane
+default from `radio.region`:
 
-US users with FCC Part 97 (amateur) authorization can raise this, but
-sensible defaults protect the mesh from one Meshpoint hogging the channel.
+| Region   | Default | Why                                           |
+|----------|---------|-----------------------------------------------|
+| `US`     | 10%     | FCC has no duty cycle rule, 10% is neighborly |
+| `ANZ`    | 10%     | AS/NZS 4268 902-928 MHz unrestricted          |
+| `KR`     | 10%     | KC has dwell-time, no duty cap                |
+| `SG_923` | 10%     | IDA SG 920-925 MHz unrestricted               |
+| `EU_868` | 1%      | ETSI hard cap on the LongFast sub-band        |
+| `IN`     | 1%      | India 865-867 MHz mirrors ETSI                |
+
+To override, set an explicit value in `local.yaml`:
+
+```yaml
+transmit:
+  max_duty_cycle_percent: 25.0
+```
+
+`GET /api/config` returns the effective value plus
+`max_duty_cycle_source` (`"auto"` or `"config"`) so the dashboard duty
+gauge reflects the right cap.
+
+The radio tab Stats card surfaces live duty cycle usage as a percentage
+of this cap. To go back to auto-derive after pinning a value, delete the
+`max_duty_cycle_percent` line from `local.yaml` and restart the service.
 
 ---
 

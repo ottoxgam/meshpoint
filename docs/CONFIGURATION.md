@@ -186,8 +186,8 @@ transmit:
   enabled: false               # opt-in
   node_id: null                # auto-generated 4-byte Meshtastic node ID
   tx_power_dbm: 14             # conservative default (dBm)
-  max_duty_cycle_percent: 1.0  # EU-safe default
-  long_name: "Mesh Point"
+  # max_duty_cycle_percent omitted: auto-derives from radio.region
+  long_name: "Meshpoint"
   short_name: "MPNT"
   hop_limit: 3
 ```
@@ -198,7 +198,7 @@ transmit:
 
 **`tx_power_dbm`**: 14 dBm is conservative and compliant in most regions. Raise carefully; check your regional ISM band limits before increasing.
 
-**`max_duty_cycle_percent`**: airtime limit as a percent of wall clock. 1.0 is EU-safe (ETSI 1% duty cycle). US users with a FCC station can raise this, but sensible defaults protect the mesh from one Meshpoint hogging the channel.
+**`max_duty_cycle_percent`**: airtime limit as a percent of wall clock. Omit (or set to `null`) to auto-derive from `radio.region`: 10% in US/ANZ/KR/SG_923, 1% in EU_868/IN. Set explicitly in `local.yaml` to override (e.g. `25.0`). See `RADIO-CONFIG-EXPLAINED.md` for the full table and rationale.
 
 **`long_name` / `short_name`**: shown to other nodes (long name in node lists, short name on compact displays). Match your naming convention.
 
@@ -267,8 +267,8 @@ Access at `http://<pi-ip>:8080`. Bind to `127.0.0.1` to restrict to local access
 ```yaml
 device:
   device_name: "My Meshpoint"
-  latitude: 42.3601
-  longitude: -71.0589
+  latitude: 40.7128
+  longitude: -74.0060
   altitude: 25
 ```
 
@@ -293,7 +293,7 @@ Two options:
    sudo systemctl restart meshpoint
    ```
 
-**Tip**: in Google Maps, right-click any location and click the coordinates at the top of the menu to copy them in decimal format (e.g. `42.3601, -71.0589`).
+**Tip**: in Google Maps, right-click any location and click the coordinates at the top of the menu to copy them in decimal format (e.g. `40.7128, -74.0060`).
 
 ---
 
@@ -443,8 +443,8 @@ transmit:              # native messaging TX (Meshtastic via SX1302, MeshCore vi
   enabled: false
   node_id: null
   tx_power_dbm: 14
-  max_duty_cycle_percent: 1.0
-  long_name: "Mesh Point"
+  # max_duty_cycle_percent omitted: auto-derives from radio.region
+  long_name: "Meshpoint"
   short_name: "MPNT"
   hop_limit: 3
 

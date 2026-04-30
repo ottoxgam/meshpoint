@@ -1,4 +1,4 @@
-"""Mesh Point CLI -- argparse dispatcher for management subcommands."""
+"""Meshpoint CLI -- argparse dispatcher for management subcommands."""
 
 from __future__ import annotations
 
@@ -58,13 +58,13 @@ def cmd_meshcore_radio(args: argparse.Namespace) -> None:
 
 
 def cmd_version(_args: argparse.Namespace) -> None:
-    print(f"  Mesh Point v{VERSION}")
+    print(f"  Meshpoint v{VERSION}")
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(
         prog="meshpoint",
-        description="Mesh Radar -- Mesh Point management CLI",
+        description="Meshpoint management CLI",
     )
     sub = parser.add_subparsers(dest="command")
 

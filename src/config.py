@@ -81,7 +81,7 @@ class UpstreamConfig:
 @dataclass
 class DeviceConfig:
     device_id: Optional[str] = None
-    device_name: str = "Mesh Point"
+    device_name: str = "Meshpoint"
     latitude: Optional[float] = None
     longitude: Optional[float] = None
     altitude: Optional[float] = None
@@ -116,6 +116,23 @@ class MqttConfig:
 
 
 @dataclass
+class NodeInfoConfig:
+    """Periodic NodeInfo broadcast settings.
+
+    Identity (long_name, short_name, hw_model) is broadcast on the
+    primary channel so receiving Meshtastic clients build a stable
+    contact entry.
+
+    Set ``interval_minutes`` to ``0`` to disable periodic broadcasts
+    while keeping TX enabled (DMs and replies still work). Otherwise
+    valid range is 5..1440 (5 min to 24 hr).
+    """
+
+    interval_minutes: int = 180
+    startup_delay_seconds: int = 60
+
+
+@dataclass
 class TransmitConfig:
     """Native LoRa transmission settings.
 
@@ -127,10 +144,13 @@ class TransmitConfig:
     enabled: bool = False
     node_id: Optional[int] = None
     tx_power_dbm: int = 14
-    max_duty_cycle_percent: float = 1.0
-    long_name: str = "Mesh Point"
+    # None = auto-derive from radio.region (10% US/ANZ/KR/SG_923,
+    # 1% EU_868/IN). Set explicitly in local.yaml to override.
+    max_duty_cycle_percent: Optional[float] = None
+    long_name: str = "Meshpoint"
     short_name: str = "MPNT"
     hop_limit: int = 3
+    nodeinfo: NodeInfoConfig = field(default_factory=NodeInfoConfig)
 
 
 @dataclass
@@ -258,7 +278,7 @@ def validate_activation(config: AppConfig) -> None:
     """Require a valid signed API key before the concentrator pipeline starts."""
     token = config.upstream.auth_token
     if not token:
-        print("\n  Mesh Point is not activated.\n")
+        print("\n  Meshpoint is not activated.\n")
         print("  An API key is required to run the concentrator.")
         print("  Get a free key at https://meshradar.io\n")
         print("  Then run:  meshpoint setup\n")
@@ -268,7 +288,7 @@ def validate_activation(config: AppConfig) -> None:
 
     if not verify_license_key(token):
         print("\n  Invalid API key.\n")
-        print("  The key in your config is not a valid Mesh Radar license.")
+        print("  The key in your config is not a valid Meshradar license.")
         print("  Generate a new key at https://meshradar.io\n")
         print("  Then run:  meshpoint setup\n")
         sys.exit(1)

@@ -11,7 +11,7 @@ from src._so_compat_check import warn_if_stale_so_files
 from src.analytics.network_mapper import NetworkMapper
 from src.analytics.signal_analyzer import SignalAnalyzer
 from src.analytics.traffic_monitor import TrafficMonitor
-from src.api.routes import analytics, config_routes, device, messages, nodes, packets, stats_routes, system_metrics, telemetry, update_check
+from src.api.routes import analytics, config_routes, device, messages, nodeinfo_routes, nodes, packets, stats_routes, system_metrics, telemetry, update_check
 from src.api.upstream_client import UpstreamClient
 from src.api.websocket_manager import WebSocketManager
 from src.config import AppConfig, load_config, validate_activation
@@ -20,8 +20,12 @@ from src.log_format import print_banner, print_packet, setup_logging
 from src.models.device_identity import DeviceIdentity, _stable_device_id
 from src.models.packet import Packet
 from src.storage.message_repository import MessageRepository
-from src.transmit.nodeinfo_broadcaster import NodeInfoBroadcaster
+from src.transmit.nodeinfo_broadcaster import (
+    NodeInfoBroadcaster,
+    clamp_interval_minutes,
+)
 from src.transmit.tx_service import TxService
+from src.version import __version__
 
 setup_logging()
 logger = logging.getLogger(__name__)
@@ -87,17 +91,17 @@ def create_app(config: AppConfig | None = None) -> FastAPI:
 
         _init_routes(pipeline, config, identity, tx_service, message_repo)
         print_banner(config)
-        logger.info("Mesh Point started -- listening for packets")
+        logger.info("Meshpoint started -- listening for packets")
         yield
         if nodeinfo_broadcaster is not None:
             await nodeinfo_broadcaster.stop()
         await upstream.stop()
         await pipeline.stop()
-        logger.info("Mesh Point stopped")
+        logger.info("Meshpoint stopped")
 
     app = FastAPI(
-        title="Mesh Radar - Mesh Point",
-        version="0.1.0",
+        title="Meshpoint",
+        version=__version__,
         lifespan=lifespan,
     )
 
@@ -109,6 +113,7 @@ def create_app(config: AppConfig | None = None) -> FastAPI:
     app.include_router(telemetry.router)
     app.include_router(update_check.router)
     app.include_router(messages.router)
+    app.include_router(nodeinfo_routes.router)
     app.include_router(config_routes.router)
     app.include_router(stats_routes.router)
 
@@ -204,12 +209,15 @@ def _build_tx_service(
         logger.info("Transmit disabled in config")
         return None
 
-    from src.transmit.duty_cycle import DutyCycleTracker
+    from src.transmit.duty_cycle import DutyCycleTracker, resolve_max_duty_percent
     from src.transmit.meshcore_tx_client import MeshCoreTxClient
 
     duty = DutyCycleTracker(
         region=config.radio.region,
-        max_duty_percent=config.transmit.max_duty_cycle_percent,
+        max_duty_percent=resolve_max_duty_percent(
+            config.radio.region,
+            config.transmit.max_duty_cycle_percent,
+        ),
     )
     meshcore_tx = MeshCoreTxClient()
     mc_source = _find_meshcore_source(coord)
@@ -247,9 +255,16 @@ def _build_nodeinfo_broadcaster(
 ) -> NodeInfoBroadcaster | None:
     """Schedule periodic NodeInfo broadcasts when Meshtastic TX is live.
 
-    Returns ``None`` when transmit is disabled, the TX service is
-    unavailable, or the radio backend isn't ready, so callers can skip
-    start/stop without a guard.
+    Always returns a broadcaster instance when the Meshtastic TX
+    backend is available, even if the configured interval is ``0``
+    (paused). The pause-aware loop sits idle on its wake event in
+    that case and resumes the moment :meth:`set_interval` is called
+    with a non-zero value, so the radio tab can hot-reload from
+    paused to active without a service restart.
+
+    Returns ``None`` only when transmit is disabled at the config
+    level, the TX service is unavailable, or the radio backend
+    isn't ready: in those cases there's nothing to broadcast on.
     """
     if tx_service is None or not config.transmit.enabled:
         return None
@@ -259,10 +274,22 @@ def _build_nodeinfo_broadcaster(
             "not available"
         )
         return None
+
+    ni = config.transmit.nodeinfo
+    interval_minutes = clamp_interval_minutes(ni.interval_minutes)
+    startup_delay = max(0, ni.startup_delay_seconds)
+    if interval_minutes == 0:
+        logger.info(
+            "NodeInfo broadcaster starting paused "
+            "(transmit.nodeinfo.interval_minutes=0); save a non-zero "
+            "interval on the radio tab to resume."
+        )
     return NodeInfoBroadcaster(
         tx_service=tx_service,
         long_name=config.transmit.long_name,
         short_name=config.transmit.short_name,
+        startup_delay_seconds=startup_delay,
+        interval_seconds=interval_minutes * 60,
     )
 
 
@@ -679,6 +706,10 @@ def _init_routes(
     )
 
     crypto = coord._crypto if hasattr(coord, "_crypto") else None
+    nodeinfo_routes.init_routes(
+        config=config,
+        nodeinfo_broadcaster=nodeinfo_broadcaster,
+    )
     config_routes.init_routes(
         config=config,
         crypto=crypto,

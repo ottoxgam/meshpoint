@@ -1,4 +1,4 @@
-"""Interactive setup wizard for first-time Mesh Point provisioning.
+"""Interactive setup wizard for first-time Meshpoint provisioning.
 
 Walks the user through hardware detection, API key entry, device
 naming, GPS configuration, and generates config/local.yaml.
@@ -118,7 +118,7 @@ def run_setup() -> None:
 def _print_banner() -> None:
     print()
     print("  ╔══════════════════════════════════════╗")
-    print("  ║     Mesh Radar -- Mesh Point Setup   ║")
+    print("  ║        Meshpoint Setup Wizard        ║")
     print("  ╚══════════════════════════════════════╝")
     print()
 
@@ -216,7 +216,7 @@ def _step_capture_source(config: dict, report: HardwareReport) -> None:
 
 
 def _step_api_key(config: dict, existing: dict | None = None) -> None:
-    """Prompt for the Mesh Radar API key (required, signature-verified)."""
+    """Prompt for the Meshradar API key (required, signature-verified)."""
     from src.activation import verify_license_key
 
     print("  [4/8] API key")
@@ -229,7 +229,7 @@ def _step_api_key(config: dict, existing: dict | None = None) -> None:
         print("        Press Enter to keep the current key, or paste a new one.")
         print()
     else:
-        print("        An API key is required to activate this Mesh Point.")
+        print("        An API key is required to activate this Meshpoint.")
         print(f"        Get a free key at {CLOUD_URL}")
         print()
         print("        Steps:")
@@ -261,7 +261,7 @@ def _step_api_key(config: dict, existing: dict | None = None) -> None:
 
 
 def _step_device_name(config: dict, existing: dict | None = None) -> None:
-    """Choose a name for this Mesh Point."""
+    """Choose a name for this Meshpoint."""
     print("  [5/8] Device name")
     current_name = (existing or {}).get("device", {}).get("device_name")
     default_name = current_name or _default_device_name()
@@ -303,13 +303,13 @@ def _step_location(
     print("        Enter coordinates manually (used for map placement).")
     print("        Tip: in Google Maps, right-click any location and click")
     print("        the coordinates at the top of the menu to copy them.")
-    print("        They copy in decimal format (e.g. 42.3601, -71.0589).")
+    print("        They copy in decimal format (e.g. 40.7128, -74.0060).")
     if cur_lat is not None and cur_lon is not None:
         print(f"        Current: {cur_lat}, {cur_lon}")
     print()
 
-    lat = _prompt_float_with_default("Latitude (e.g. 42.3601):", cur_lat)
-    lon = _prompt_float_with_default("Longitude (e.g. -71.0589):", cur_lon)
+    lat = _prompt_float_with_default("Latitude (e.g. 40.7128):", cur_lat)
+    lon = _prompt_float_with_default("Longitude (e.g. -74.0060):", cur_lon)
     alt = _prompt_float_with_default(
         "Altitude in meters (or Enter to skip):", cur_alt, required=False
     )
@@ -429,7 +429,7 @@ def _step_start_service() -> None:
             print("  Run 'sudo reboot' when ready. The service starts")
             print("  automatically on boot.")
     else:
-        print("  Reboot the device to start the Mesh Point service.")
+        print("  Reboot the device to start the Meshpoint service.")
 
     print()
     print("  Setup complete!")
@@ -520,7 +520,7 @@ def _choose_from_list(message: str, options: list[str]) -> str:
 def _default_device_name() -> str:
     """Generate a sensible default device name from the hostname."""
     hostname = socket.gethostname().split(".")[0]
-    return f"Mesh Point {hostname.capitalize()}"
+    return f"Meshpoint {hostname.capitalize()}"
 
 
 def _is_systemd() -> bool:

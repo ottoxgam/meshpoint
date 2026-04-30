@@ -1,6 +1,6 @@
 /**
- * Leaflet map with marker clustering for the local Mesh Point dashboard.
- * Displays the Mesh Point device and captured nodes with protocol-colored markers.
+ * Leaflet map with marker clustering for the local Meshpoint dashboard.
+ * Displays the Meshpoint device and captured nodes with protocol-colored markers.
  */
 class NodeMap {
     constructor(containerId) {
@@ -116,10 +116,10 @@ class NodeMap {
             zIndexOffset: 1000,
         });
 
-        const name = device.device_name || 'Mesh Point';
+        const name = device.device_name || 'Meshpoint';
         this._deviceMarker.bindPopup(
             `<strong>${this._esc(name)}</strong><br>` +
-            `Type: Mesh Point<br>` +
+            `Type: Meshpoint<br>` +
             `Lat: ${device.latitude.toFixed(4)}<br>` +
             `Lon: ${device.longitude.toFixed(4)}`
         );

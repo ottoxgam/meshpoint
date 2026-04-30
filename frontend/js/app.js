@@ -1,5 +1,5 @@
 /**
- * Single-page controller for the local Mesh Point dashboard.
+ * Single-page controller for the local Meshpoint dashboard.
  * Wires up map, node list, packet feed, stat cards, and WebSocket.
  */
 document.addEventListener('DOMContentLoaded', async () => {
@@ -86,7 +86,7 @@ async function _loadInitial(nodeMap, nodeList, packetFeed) {
         const nodesData = await nodesRes.json();
         const packetsData = await packetsRes.json();
 
-        _setText('device-name', device.device_name || 'Mesh Point');
+        _setText('device-name', device.device_name || 'Meshpoint');
         if (device.device_id) {
             const short = device.device_id.slice(0, 8);
             const idEl = document.getElementById('device-id');

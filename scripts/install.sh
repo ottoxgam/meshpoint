@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 #
-# Mesh Radar -- Mesh Point Installer
+# Meshpoint Installer
 #
-# Prepares a fresh Raspberry Pi for Mesh Point operation:
+# Prepares a fresh Raspberry Pi for Meshpoint operation:
 #   1. System packages and build tools
 #   2. SPI / UART / GPS kernel config
 #   3. SX1302 HAL (libloragw) compilation
@@ -45,6 +45,22 @@ fi
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 info "Source directory: ${SCRIPT_DIR}"
 
+# Detect upgrade vs fresh install for the post-install banner.
+# An existing local.yaml or an enabled meshpoint service is the
+# clearest signal that the previous install completed at least once.
+IS_UPGRADE=0
+if [ -f "${MESHPOINT_DIR}/config/local.yaml" ] \
+        || systemctl is-enabled meshpoint &>/dev/null; then
+    IS_UPGRADE=1
+    info "Existing installation detected: running in upgrade mode"
+fi
+
+# Read the version we're installing for the post-install banner.
+INSTALL_VERSION="$(
+    grep -oP '__version__ = "\K[^"]+' "${SCRIPT_DIR}/src/version.py" \
+        2>/dev/null || echo "unknown"
+)"
+
 # ── 1. System packages ─────────────────────────────────────────────
 
 info "Updating system packages..."
@@ -84,7 +100,7 @@ if [ -f "$BOOT_CONFIG" ]; then
     if ! grep -q "dtoverlay=disable-bt" "$BOOT_CONFIG"; then
         info "Adding dtoverlay=disable-bt to ${BOOT_CONFIG}"
         echo "" >> "$BOOT_CONFIG"
-        echo "# Mesh Point: free primary UART for GPS" >> "$BOOT_CONFIG"
+        echo "# Meshpoint: free primary UART for GPS" >> "$BOOT_CONFIG"
         echo "dtoverlay=disable-bt" >> "$BOOT_CONFIG"
     else
         info "dtoverlay=disable-bt already present"
@@ -350,7 +366,7 @@ if [ -f "$HAL_SRC" ]; then
     bash "${SCRIPT_DIR}/scripts/patch_hal.sh"
 fi
 
-# ── 5. Install Mesh Point application ──────────────────────────────
+# ── 5. Install Meshpoint application ──────────────────────────────
 
 info "Installing Meshpoint to ${MESHPOINT_DIR}..."
 mkdir -p "$MESHPOINT_DIR"
@@ -454,26 +470,38 @@ ln -sf "${MESHPOINT_DIR}/${CLI_SCRIPT}" /usr/local/bin/meshpoint
 
 echo ""
 echo "==========================================="
-echo "  Mesh Point installation complete!"
-echo "==========================================="
-echo ""
-echo "  Next steps:"
-echo ""
-echo "  1. Reboot to apply SPI/UART changes:"
-echo "       sudo reboot"
-echo ""
-echo "  2. After reboot, run the setup wizard:"
-echo "       sudo meshpoint setup"
-echo ""
-echo "  3. The wizard will walk you through:"
-echo "       - Hardware detection"
-echo "       - API key configuration"
-echo "       - Device naming and GPS"
-echo "       - Starting the service"
-echo ""
-echo "  IMPORTANT: Never yank the power cable"
-echo "  without shutting down first. Always run:"
-echo "       sudo poweroff"
-echo "  and wait for the LED to go dark."
-echo ""
+if [ "$IS_UPGRADE" = "1" ]; then
+    echo "  Meshpoint upgrade to v${INSTALL_VERSION} complete!"
+    echo "==========================================="
+    echo ""
+    echo "  Restart the service to apply changes:"
+    echo "       sudo systemctl restart meshpoint"
+    echo ""
+    echo "  A reboot is NOT required: SPI/UART/I2C are"
+    echo "  already configured from the original install."
+    echo ""
+else
+    echo "  Meshpoint installation complete!"
+    echo "==========================================="
+    echo ""
+    echo "  Next steps:"
+    echo ""
+    echo "  1. Reboot to apply SPI/UART changes:"
+    echo "       sudo reboot"
+    echo ""
+    echo "  2. After reboot, run the setup wizard:"
+    echo "       sudo meshpoint setup"
+    echo ""
+    echo "  3. The wizard will walk you through:"
+    echo "       - Hardware detection"
+    echo "       - API key configuration"
+    echo "       - Device naming and GPS"
+    echo "       - Starting the service"
+    echo ""
+    echo "  IMPORTANT: Never yank the power cable"
+    echo "  without shutting down first. Always run:"
+    echo "       sudo poweroff"
+    echo "  and wait for the LED to go dark."
+    echo ""
+fi
 echo "==========================================="
