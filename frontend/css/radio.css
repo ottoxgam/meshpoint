@@ -300,6 +300,33 @@
 
 .r-btn--warn:hover { background: rgba(245, 158, 11, 0.25); }
 
+/* Pending-changes cue: a small pulsing cyan dot in the upper-right
+ * corner of any button when the user has unsaved input that this
+ * button would commit. Generic so other radio cards can adopt it
+ * by toggling the same class on their Save button. */
+
+.r-btn--has-pending {
+    position: relative;
+}
+
+.r-btn--has-pending::after {
+    content: '';
+    position: absolute;
+    top: 5px;
+    right: 7px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent-cyan);
+    box-shadow: 0 0 8px var(--accent-cyan);
+    animation: r-btn-pending-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes r-btn-pending-pulse {
+    0%, 100% { opacity: 0.55; }
+    50%      { opacity: 1; }
+}
+
 .r-btn[disabled],
 .r-btn:disabled {
     opacity: 0.5;

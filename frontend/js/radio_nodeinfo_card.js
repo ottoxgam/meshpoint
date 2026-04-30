@@ -111,6 +111,7 @@ class RadioNodeInfoCard {
         this._setActiveChip(this._draft.interval_minutes);
         this._renderIntervalLabel();
         this._renderLamp();
+        this._renderPendingCue();
         this._tick();
         this._startTimer();
     }
@@ -161,6 +162,17 @@ class RadioNodeInfoCard {
         });
     }
 
+    _isPending() {
+        return this._draft.interval_minutes !== this._saved.interval_minutes;
+    }
+
+    _renderPendingCue() {
+        const saveBtn = this._root.querySelector('#r-ni-save');
+        if (saveBtn) {
+            saveBtn.classList.toggle('r-btn--has-pending', this._isPending());
+        }
+    }
+
     _wire() {
         this._root.querySelectorAll('#r-ni-chips .r-chip').forEach((chip) => {
             chip.addEventListener('click', (e) => {
@@ -169,6 +181,7 @@ class RadioNodeInfoCard {
                 this._root.querySelector('#r-ni-input').value = String(minutes);
                 this._draft.interval_minutes = minutes;
                 this._setActiveChip(minutes);
+                this._renderPendingCue();
             });
         });
 
@@ -180,6 +193,7 @@ class RadioNodeInfoCard {
             if (minutes === 0 || (minutes >= 5 && minutes <= 1440)) {
                 this._draft.interval_minutes = minutes;
             }
+            this._renderPendingCue();
         });
 
         this._root.querySelector('#r-ni-save').addEventListener(
