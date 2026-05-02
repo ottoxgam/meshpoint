@@ -75,6 +75,7 @@ CREATE TABLE IF NOT EXISTS messages (
     text          TEXT NOT NULL,
     node_id       TEXT NOT NULL,
     node_name     TEXT,
+    source_id     TEXT NOT NULL DEFAULT '',
     protocol      TEXT NOT NULL,
     channel       INTEGER NOT NULL DEFAULT 0,
     timestamp     TEXT NOT NULL,
@@ -125,6 +126,11 @@ class DatabaseManager:
                 "ALTER TABLE messages ADD COLUMN rx_count INTEGER NOT NULL DEFAULT 1"
             )
             logger.info("Migration: added rx_count column to messages table")
+        if msg_cols and "source_id" not in msg_cols:
+            await self._connection.execute(
+                "ALTER TABLE messages ADD COLUMN source_id TEXT NOT NULL DEFAULT ''"
+            )
+            logger.info("Migration: added source_id column to messages table")
 
         await self._cleanup_cross_protocol_name_contamination()
 

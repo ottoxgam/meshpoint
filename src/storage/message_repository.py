@@ -29,6 +29,7 @@ class Message:
     text: str
     node_id: str
     node_name: str
+    source_id: str
     protocol: str
     channel: int
     timestamp: str
@@ -45,6 +46,7 @@ class Message:
             "text": self.text,
             "node_id": self.node_id,
             "node_name": self.node_name,
+            "source_id": self.source_id,
             "protocol": self.protocol,
             "channel": self.channel,
             "timestamp": self.timestamp,
@@ -118,6 +120,7 @@ class MessageRepository:
         node_id: str,
         node_name: str,
         protocol: str,
+        source_id: str = "",
         channel: int = 0,
         packet_id: str = "",
         direction: str = "received",
@@ -155,10 +158,10 @@ class MessageRepository:
         now = datetime.now(timezone.utc).isoformat()
         cursor = await self._db.execute(
             """INSERT INTO messages
-               (direction, text, node_id, node_name, protocol,
+               (direction, text, node_id, node_name, source_id, protocol,
                 channel, timestamp, status, packet_id, rssi, snr)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-            (direction, text, node_id, node_name, protocol,
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (direction, text, node_id, node_name, source_id, protocol,
              channel, now, "delivered", packet_id, rssi, snr),
         )
         await self._db.commit()
@@ -274,6 +277,7 @@ class MessageRepository:
             text=row["text"],
             node_id=row["node_id"],
             node_name=row["node_name"] or "",
+            source_id=row.get("source_id") or "",
             protocol=row["protocol"],
             channel=row["channel"],
             timestamp=row["timestamp"],

@@ -625,6 +625,7 @@ def _setup_message_interception(
                 node_id=node_id,
                 node_name=node_name,
                 protocol=packet.protocol.value,
+                source_id=packet.source_id or "",
                 packet_id=packet.packet_id or "",
                 direction=direction,
                 rssi=rssi,
