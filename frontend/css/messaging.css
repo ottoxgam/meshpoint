@@ -261,6 +261,12 @@
     font-weight: 600;
     margin-bottom: 0.15rem;
     opacity: 0.8;
+    cursor: pointer;
+}
+
+.msg-bubble__sender:hover {
+    opacity: 1;
+    text-decoration: underline;
 }
 
 /* ── Day separator ────────────────────────────────────────────── */

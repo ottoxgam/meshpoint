@@ -9,6 +9,7 @@ class NodeDrawer {
         this._onViewOnMap = options.onViewOnMap || null;
         this._currentNode = null;
         this._sections = {};
+        window.nodeDrawer = this;
     }
 
     async open(node) {

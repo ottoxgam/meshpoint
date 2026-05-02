@@ -135,7 +135,7 @@ class MessagingChat {
         if (msg.direction === 'received') {
             let name = msg.node_name || msg.node_id || '';
             if (name.startsWith('broadcast:')) name = '';
-            if (name) senderHtml = `<div class="msg-bubble__sender">${this._esc(name)}</div>`;
+            if (name) senderHtml = `<div class="msg-bubble__sender" data-node-id="${this._esc(msg.node_id)}">${this._esc(name)}</div>`;
         }
 
         const signalHtml = this._buildSignalHtml(msg);
@@ -193,6 +193,13 @@ class MessagingChat {
         this._messagesEl.addEventListener('scroll', () => {
             if (this._messagesEl.scrollTop === 0 && !this._allLoaded) {
                 this._loadOlderMessages();
+            }
+        });
+
+        this._messagesEl.addEventListener('click', (e) => {
+            const sender = e.target.closest('.msg-bubble__sender[data-node-id]');
+            if (sender && window.nodeDrawer) {
+                window.nodeDrawer.open({ node_id: sender.dataset.nodeId });
             }
         });
     }
@@ -260,7 +267,7 @@ class MessagingChat {
         if (msg.direction === 'received') {
             let name = msg.node_name || msg.node_id || '';
             if (name.startsWith('broadcast:')) name = '';
-            if (name) senderHtml = `<div class="msg-bubble__sender">${this._esc(name)}</div>`;
+            if (name) senderHtml = `<div class="msg-bubble__sender" data-node-id="${this._esc(msg.node_id)}">${this._esc(name)}</div>`;
         }
 
         bubble.innerHTML = `
