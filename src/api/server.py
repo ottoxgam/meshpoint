@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, WebSocket, WebSocketDisconnect
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from src._so_compat_check import warn_if_stale_so_files
@@ -145,6 +146,15 @@ def create_app(config: AppConfig | None = None) -> FastAPI:
             await ws_manager.disconnect(websocket)
 
     static_dir = Path(config.dashboard.static_dir)
+
+    @app.get("/setup", include_in_schema=False)
+    async def serve_setup_page():
+        return _serve_auth_page(static_dir, "setup.html")
+
+    @app.get("/login", include_in_schema=False)
+    async def serve_login_page():
+        return _serve_auth_page(static_dir, "login.html")
+
     if static_dir.exists():
         app.mount("/", StaticFiles(directory=str(static_dir), html=True))
 
@@ -735,6 +745,15 @@ def _init_routes(
         crypto=crypto,
         tx_service=tx_service,
     )
+
+
+def _serve_auth_page(static_dir: Path, filename: str) -> FileResponse:
+    """Return one of the two pre-auth HTML pages from frontend/auth/."""
+    page = static_dir / "auth" / filename
+    if not page.exists():
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="auth page not found")
+    return FileResponse(str(page), media_type="text/html")
 
 
 def _on_packet_received(packet: Packet) -> None:
