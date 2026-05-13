@@ -95,6 +95,50 @@ loading the stale binaries from the previous release.
 `git pull` when crossing the v0.6.x to v0.7.0 boundary. The installer is
 idempotent and safe to re-run on any release.
 
+### Service won't start after upgrading to v0.7.3 (`ModuleNotFoundError: No module named 'bcrypt'` or `'jwt'`)
+
+**Cause:** v0.7.3 added local dashboard authentication, which requires
+two new Python dependencies (`bcrypt>=4.2.0` and `PyJWT>=2.10.0`).
+`git pull` alone fetches the new source code but does not refresh the
+venv -- the service then crashes at import time on the missing
+modules. The dashboard never opens port 8080, so the symptom looks
+like "dashboard unreachable after upgrade", not the v0.7.3.1 WS bug.
+
+The `docs/ONBOARDING.md#updating` and `README.md#updating` sections
+were missing this gotcha through the v0.7.3.0 release; they were
+patched the same day v0.7.3 shipped after a user hit it.
+
+**Fix:** Re-run `install.sh` to refresh the venv, then restart:
+
+```bash
+cd /opt/meshpoint
+sudo bash scripts/install.sh
+sudo systemctl restart meshpoint
+meshpoint status
+```
+
+`install.sh` is idempotent and reuses the existing venv, so this is
+fast (no system-package re-install). After the service comes back up,
+hard-refresh the dashboard tab (Ctrl+Shift+R / Cmd+Shift+R) and you
+should be redirected to `/login` (or `/setup` if you cleared
+`local.yaml` somehow). To confirm the missing-module symptom before
+running the fix:
+
+```bash
+sudo journalctl -u meshpoint -n 30 --no-pager | grep -iE "modulenotfound|importerror"
+```
+
+You should see one of:
+
+```
+ModuleNotFoundError: No module named 'bcrypt'
+ModuleNotFoundError: No module named 'jwt'
+```
+
+Future updates inside the v0.7.3+ series go back to plain `git pull +
+systemctl restart` unless a release explicitly notes new dependencies
+in its CHANGELOG entry.
+
 ### `install.sh` told me to reboot after an upgrade. Do I have to?
 
 **Pre-v0.7.1 only.** The install.sh on v0.7.0 always printed the
