@@ -1,15 +1,16 @@
 /* Responsive overrides for the local dashboard.
  *
  * This file consolidates @media-query rules for dashboard.css and
- * messaging.css to keep those source files focused on layout
- * primitives. Loaded LAST in index.html so it cleanly overrides
- * the desktop defaults at narrower viewports.
+ * messaging.css. Loaded LAST in index.html so it cleanly overrides
+ * the desktop defaults at narrower viewports. Sidebar-specific
+ * responsive rules live in sidebar/sidebar.css to keep the sidebar
+ * concern self-contained.
  *
  * Card-specific responsive rules (radio.css, radio_cards.css,
  * stats.css) live alongside their components since they sit well
  * under the 500-line file budget. */
 
-/* ===== Dashboard tab + global top bar ===== */
+/* ===== Dashboard layout breakpoints ===== */
 
 @media (max-width: 1024px) {
     .dashboard__main { grid-template-columns: 1fr; }
@@ -18,15 +19,6 @@
 }
 
 @media (max-width: 720px) {
-    .top-bar { padding: 0.5rem 0.75rem; }
-    .top-bar__status {
-        flex-wrap: wrap;
-        row-gap: 0.25rem;
-        column-gap: 0.5rem;
-        font-size: 0.72rem;
-    }
-    .top-bar__divider { display: none; }
-    .top-bar__device { font-size: 0.75rem; }
     .dashboard__feed { height: auto; min-height: 220px; }
     .stat-card { min-width: 88px; padding: 0.3rem 0.5rem; }
     .stat-card__value { font-size: 1rem; }
@@ -41,14 +33,6 @@
 }
 
 @media (max-width: 640px) {
-    .top-bar {
-        flex-direction: column;
-        gap: 0.4rem;
-        align-items: flex-start;
-    }
-    .top-bar__brand { width: 100%; }
-    .top-bar__status { width: 100%; }
-    .top-bar__brand h1 { font-size: 0.95rem; }
     .packet-table { font-size: 0.7rem; }
     .packet-table th, .packet-table td { padding: 0.3rem 0.4rem; }
     .packet-table th:nth-child(7),

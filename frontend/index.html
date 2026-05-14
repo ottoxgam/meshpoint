@@ -13,7 +13,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/dashboard.css" />
-    <link rel="stylesheet" href="css/tab_bar.css" />
+    <link rel="stylesheet" href="sidebar/sidebar.css" />
     <link rel="stylesheet" href="css/node_cards.css" />
     <link rel="stylesheet" href="css/node_drawer.css" />
     <link rel="stylesheet" href="css/messaging.css" />
@@ -25,160 +25,297 @@
     <link rel="stylesheet" href="css/responsive.css" />
 </head>
 <body>
-    <header class="top-bar">
-        <div class="top-bar__brand">
-            <img src="/assets/meshpoint-logo.png" alt="Meshpoint" class="top-bar__icon" width="40" height="40" />
-            <h1>
-                <a href="https://meshradar.io" target="_blank" rel="noopener"
-                   class="top-bar__brand-link">Meshradar</a>
-                <span class="top-bar__subtitle">/ Meshpoint</span>
-            </h1>
-        </div>
-        <div class="top-bar__status">
-            <span id="ws-status" class="status-dot status-dot--disconnected"></span>
-            <span id="ws-label" class="status-label">Connecting...</span>
-            <span class="top-bar__divider">|</span>
-            <span id="node-count-badge" class="top-bar__stat">0 nodes</span>
-            <span class="top-bar__divider">|</span>
-            <span id="packet-count-badge" class="top-bar__stat">0 packets</span>
-            <span class="top-bar__divider">|</span>
-            <span id="device-name" class="top-bar__device"></span>
-            <span id="device-id" class="top-bar__device-id" title="Click to copy device ID"></span>
-            <span id="version-badge" class="top-bar__version">--</span>
-            <a id="update-badge" class="update-badge hidden" title="Update available" href="https://github.com/KMX415/meshpoint/blob/main/docs/ONBOARDING.md#updating" target="_blank" rel="noopener">&#9888;</a>
-            <span class="top-bar__divider">|</span>
-            <button id="signout-btn" class="top-bar__signout" type="button" title="Sign out" aria-label="Sign out">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14" aria-hidden="true">
-                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-                    <polyline points="16 17 21 12 16 7"/>
-                    <line x1="21" y1="12" x2="9" y2="12"/>
-                </svg>
-            </button>
-        </div>
-    </header>
+    <div class="app" data-sidebar="expanded">
+        <button class="sidebar__hamburger" id="sidebar-hamburger" aria-label="Open menu">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <line x1="3" y1="6" x2="21" y2="6"/>
+                <line x1="3" y1="12" x2="21" y2="12"/>
+                <line x1="3" y1="18" x2="21" y2="18"/>
+            </svg>
+        </button>
+        <div class="sidebar__backdrop" id="sidebar-backdrop"></div>
 
-    <nav class="tab-bar">
-        <button class="tab-bar__btn tab-bar__btn--active" data-tab="dashboard">Dashboard</button>
-        <button class="tab-bar__btn" data-tab="stats">Stats</button>
-        <button class="tab-bar__btn" data-tab="messages">Messages <span id="msg-unread-badge" class="tab-bar__badge" style="display:none">0</span></button>
-        <button class="tab-bar__btn" data-tab="radio">Radio</button>
-    </nav>
-
-    <div id="tab-dashboard" class="tab-content tab-content--active">
-    <main class="dashboard">
-        <section class="dashboard__stats">
-            <div class="stat-card" id="stat-nodes">
-                <div class="stat-card__label">Nodes Discovered</div>
-                <div class="stat-card__value" id="stat-nodes-val">--</div>
-                <div class="stat-card__subtitle">24h / total</div>
-            </div>
-            <div class="stat-card" id="stat-packets-card">
-                <div class="stat-card__label">Total Packets</div>
-                <div class="stat-card__value" id="stat-packets-val">--</div>
-            </div>
-            <div class="stat-card" id="stat-rate">
-                <div class="stat-card__label">Packets / Min</div>
-                <div class="stat-card__value" id="stat-rate-val">--</div>
-            </div>
-            <div class="stat-card" id="stat-rssi">
-                <div class="stat-card__label">Avg RSSI</div>
-                <div class="stat-card__value" id="stat-rssi-val">--</div>
-            </div>
-            <div class="stat-card stat-card--relay" id="stat-relay">
-                <div class="stat-card__label">Packets Relayed</div>
-                <div class="stat-card__value" id="stat-relay-val">--</div>
-                <div class="stat-card__sub" id="stat-relay-sub"></div>
-            </div>
-            <div class="stat-card" id="stat-uptime">
-                <div class="stat-card__label">Uptime</div>
-                <div class="stat-card__value" id="stat-uptime-val">--</div>
-            </div>
-            <div class="stat-card stat-card--system" id="stat-cpu">
-                <div class="stat-card__label">CPU</div>
-                <div class="stat-card__value" id="stat-cpu-val">--</div>
-            </div>
-            <div class="stat-card stat-card--system" id="stat-ram">
-                <div class="stat-card__label">RAM</div>
-                <div class="stat-card__value" id="stat-ram-val">--</div>
-                <div class="stat-card__sub" id="stat-ram-sub"></div>
-            </div>
-            <div class="stat-card stat-card--system" id="stat-disk">
-                <div class="stat-card__label">Disk</div>
-                <div class="stat-card__value" id="stat-disk-val">--</div>
-                <div class="stat-card__sub" id="stat-disk-sub"></div>
-            </div>
-            <div class="stat-card stat-card--system" id="stat-temp">
-                <div class="stat-card__label">CPU Temp</div>
-                <div class="stat-card__value" id="stat-temp-val">--</div>
-            </div>
-        </section>
-
-        <div class="dashboard__main">
-            <section class="dashboard__map">
-                <div class="panel">
-                    <div class="panel__header">Node Map</div>
-                    <div id="map" class="panel__body map-container"></div>
-                </div>
-            </section>
-
-            <section class="dashboard__side">
-                <div class="panel panel--nodes">
-                    <div class="panel__header">
-                        <span>Nodes</span>
-                        <input type="text" id="node-search" class="node-search" placeholder="Search..." />
+        <aside class="sidebar" role="navigation" aria-label="Primary">
+            <header class="sidebar__header">
+                <img class="sidebar__logo" src="/assets/meshpoint-logo.png" alt="Meshpoint" />
+                <div class="sidebar__device">
+                    <div class="sidebar__device-name" id="sidebar-device-name">Meshpoint</div>
+                    <div class="sidebar__device-status">
+                        <span class="status-dot status-dot--disconnected" id="sidebar-status-dot"></span>
+                        <span id="sidebar-status-text">connecting...</span>
                     </div>
-                    <div class="panel__body" id="node-list"></div>
+                </div>
+                <button class="sidebar__collapse" id="sidebar-collapse-btn" type="button" aria-label="Collapse sidebar">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" aria-hidden="true">
+                        <polyline points="15 18 9 12 15 6"/>
+                    </svg>
+                </button>
+            </header>
+
+            <nav class="sidebar__nav" aria-label="Sections">
+                <ul class="sidebar__list">
+                    <li class="sidebar__item">
+                        <a href="#/dashboard" class="sidebar__link" data-route="dashboard">
+                            <span class="sidebar__icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <rect x="3" y="3" width="7" height="7"/>
+                                    <rect x="14" y="3" width="7" height="7"/>
+                                    <rect x="14" y="14" width="7" height="7"/>
+                                    <rect x="3" y="14" width="7" height="7"/>
+                                </svg>
+                            </span>
+                            <span class="sidebar__label">Dashboard</span>
+                        </a>
+                    </li>
+                    <li class="sidebar__item">
+                        <a href="#/stats" class="sidebar__link" data-route="stats">
+                            <span class="sidebar__icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <line x1="12" y1="20" x2="12" y2="10"/>
+                                    <line x1="18" y1="20" x2="18" y2="4"/>
+                                    <line x1="6" y1="20" x2="6" y2="16"/>
+                                </svg>
+                            </span>
+                            <span class="sidebar__label">Stats</span>
+                        </a>
+                    </li>
+                    <li class="sidebar__item">
+                        <a href="#/messages" class="sidebar__link" data-route="messages">
+                            <span class="sidebar__icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                                </svg>
+                            </span>
+                            <span class="sidebar__label">Messages</span>
+                            <span id="msg-unread-badge" class="sidebar__badge sidebar__badge--unread" data-badge-for="messages" style="display:none">0</span>
+                        </a>
+                    </li>
+                    <li class="sidebar__item">
+                        <a href="#/radio" class="sidebar__link" data-route="radio">
+                            <span class="sidebar__icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M4.93 19.07a10 10 0 0 1 0-14.14"/>
+                                    <path d="M7.76 16.24a6 6 0 0 1 0-8.48"/>
+                                    <circle cx="12" cy="12" r="2"/>
+                                    <path d="M16.24 7.76a6 6 0 0 1 0 8.48"/>
+                                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+                                </svg>
+                            </span>
+                            <span class="sidebar__label">Radio</span>
+                            <span class="sidebar__badge" data-badge-for="radio" style="display:none"></span>
+                        </a>
+                    </li>
+                    <li class="sidebar__item" data-requires-section="terminal">
+                        <a href="#/terminal" class="sidebar__link" data-route="terminal">
+                            <span class="sidebar__icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <polyline points="4 17 10 11 4 5"/>
+                                    <line x1="12" y1="19" x2="20" y2="19"/>
+                                </svg>
+                            </span>
+                            <span class="sidebar__label">Terminal</span>
+                        </a>
+                    </li>
+
+                    <li class="sidebar__group" data-group="configuration" data-expanded="false">
+                        <button class="sidebar__group-toggle" type="button" data-group="configuration" aria-expanded="false">
+                            <span class="sidebar__icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M12 20a8 8 0 1 0-8-8"/>
+                                    <path d="M12 12l4 4"/>
+                                    <path d="M12 4v4"/>
+                                </svg>
+                            </span>
+                            <span class="sidebar__label">Configuration</span>
+                            <svg class="sidebar__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <polyline points="9 18 15 12 9 6"/>
+                            </svg>
+                        </button>
+                        <ul class="sidebar__sublist">
+                            <li class="sidebar__subitem"><a href="#/configuration/identity" class="sidebar__link" data-route="configuration/identity"><span class="sidebar__label">Identity</span></a></li>
+                            <li class="sidebar__subitem"><a href="#/configuration/radio" class="sidebar__link" data-route="configuration/radio"><span class="sidebar__label">Radio</span></a></li>
+                            <li class="sidebar__subitem"><a href="#/configuration/channels" class="sidebar__link" data-route="configuration/channels"><span class="sidebar__label">Channels</span></a></li>
+                            <li class="sidebar__subitem"><a href="#/configuration/transmit" class="sidebar__link" data-route="configuration/transmit"><span class="sidebar__label">Transmit</span></a></li>
+                            <li class="sidebar__subitem"><a href="#/configuration/mqtt" class="sidebar__link" data-route="configuration/mqtt"><span class="sidebar__label">MQTT</span></a></li>
+                            <li class="sidebar__subitem"><a href="#/configuration/gps" class="sidebar__link" data-route="configuration/gps"><span class="sidebar__label">GPS</span></a></li>
+                        </ul>
+                    </li>
+
+                    <li class="sidebar__group" data-group="settings" data-expanded="false" data-requires-section="settings">
+                        <button class="sidebar__group-toggle" type="button" data-group="settings" aria-expanded="false">
+                            <span class="sidebar__icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <circle cx="12" cy="12" r="3"/>
+                                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                                </svg>
+                            </span>
+                            <span class="sidebar__label">Settings</span>
+                            <svg class="sidebar__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <polyline points="9 18 15 12 9 6"/>
+                            </svg>
+                        </button>
+                        <ul class="sidebar__sublist">
+                            <li class="sidebar__subitem"><a href="#/settings/updates" class="sidebar__link" data-route="settings/updates"><span class="sidebar__label">Updates</span><span class="sidebar__badge sidebar__badge--update" data-badge-for="settings/updates" style="display:none"></span></a></li>
+                            <li class="sidebar__subitem"><a href="#/settings/auth" class="sidebar__link" data-route="settings/auth"><span class="sidebar__label">Auth</span></a></li>
+                            <li class="sidebar__subitem" data-requires-section="settings.dangerous"><a href="#/settings/dangerous" class="sidebar__link" data-route="settings/dangerous"><span class="sidebar__label">Dangerous</span></a></li>
+                        </ul>
+                    </li>
+                </ul>
+                <span class="sidebar__active-bar" id="sidebar-active-bar" aria-hidden="true"></span>
+            </nav>
+
+            <footer class="sidebar__footer">
+                <div class="sidebar__role">
+                    <span class="sidebar__role-pill" id="sidebar-role-pill">--</span>
+                    <span class="sidebar__user" id="sidebar-username">--</span>
+                </div>
+                <button class="sidebar__signout" id="signout-btn" type="button">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                        <polyline points="16 17 21 12 16 7"/>
+                        <line x1="21" y1="12" x2="9" y2="12"/>
+                    </svg>
+                    <span class="sidebar__signout-label">Sign out</span>
+                </button>
+            </footer>
+        </aside>
+
+        <main class="app__content" id="app-content">
+            <section class="section section--active" data-section="dashboard">
+                <main class="dashboard">
+                    <section class="dashboard__stats">
+                        <div class="stat-card" id="stat-nodes">
+                            <div class="stat-card__label">Nodes Discovered</div>
+                            <div class="stat-card__value" id="stat-nodes-val">--</div>
+                            <div class="stat-card__subtitle">24h / total</div>
+                        </div>
+                        <div class="stat-card" id="stat-packets-card">
+                            <div class="stat-card__label">Total Packets</div>
+                            <div class="stat-card__value" id="stat-packets-val">--</div>
+                        </div>
+                        <div class="stat-card" id="stat-rate">
+                            <div class="stat-card__label">Packets / Min</div>
+                            <div class="stat-card__value" id="stat-rate-val">--</div>
+                        </div>
+                        <div class="stat-card" id="stat-rssi">
+                            <div class="stat-card__label">Avg RSSI</div>
+                            <div class="stat-card__value" id="stat-rssi-val">--</div>
+                        </div>
+                        <div class="stat-card stat-card--relay" id="stat-relay">
+                            <div class="stat-card__label">Packets Relayed</div>
+                            <div class="stat-card__value" id="stat-relay-val">--</div>
+                            <div class="stat-card__sub" id="stat-relay-sub"></div>
+                        </div>
+                        <div class="stat-card" id="stat-uptime">
+                            <div class="stat-card__label">Uptime</div>
+                            <div class="stat-card__value" id="stat-uptime-val">--</div>
+                        </div>
+                        <div class="stat-card stat-card--system" id="stat-cpu">
+                            <div class="stat-card__label">CPU</div>
+                            <div class="stat-card__value" id="stat-cpu-val">--</div>
+                        </div>
+                        <div class="stat-card stat-card--system" id="stat-ram">
+                            <div class="stat-card__label">RAM</div>
+                            <div class="stat-card__value" id="stat-ram-val">--</div>
+                            <div class="stat-card__sub" id="stat-ram-sub"></div>
+                        </div>
+                        <div class="stat-card stat-card--system" id="stat-disk">
+                            <div class="stat-card__label">Disk</div>
+                            <div class="stat-card__value" id="stat-disk-val">--</div>
+                            <div class="stat-card__sub" id="stat-disk-sub"></div>
+                        </div>
+                        <div class="stat-card stat-card--system" id="stat-temp">
+                            <div class="stat-card__label">CPU Temp</div>
+                            <div class="stat-card__value" id="stat-temp-val">--</div>
+                        </div>
+                    </section>
+
+                    <div class="dashboard__main">
+                        <section class="dashboard__map">
+                            <div class="panel">
+                                <div class="panel__header">Node Map</div>
+                                <div id="map" class="panel__body map-container"></div>
+                            </div>
+                        </section>
+
+                        <section class="dashboard__side">
+                            <div class="panel panel--nodes">
+                                <div class="panel__header">
+                                    <span>Nodes</span>
+                                    <input type="text" id="node-search" class="node-search" placeholder="Search..." />
+                                </div>
+                                <div class="panel__body" id="node-list"></div>
+                            </div>
+                        </section>
+                    </div>
+
+                    <section class="dashboard__feed">
+                        <div class="panel">
+                            <div class="panel__header">
+                                Packets
+                                <span class="packet-count" id="packet-count">0</span>
+                            </div>
+                            <div class="panel__body">
+                                <table class="packet-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Time</th>
+                                            <th>Protocol</th>
+                                            <th>Source</th>
+                                            <th>Dest</th>
+                                            <th>Type</th>
+                                            <th>RSSI</th>
+                                            <th>SNR</th>
+                                            <th>Freq</th>
+                                            <th>SF</th>
+                                            <th>Hops</th>
+                                            <th>Details</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="packet-tbody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </section>
+                </main>
+            </section>
+
+            <section class="section" data-section="stats" style="display:none">
+                <div id="stats-panel" class="stats-panel">
+                    <div class="stats-panel__loading">Loading stats...</div>
                 </div>
             </section>
-        </div>
 
-        <section class="dashboard__feed">
-            <div class="panel">
-                <div class="panel__header">
-                    Packets
-                    <span class="packet-count" id="packet-count">0</span>
+            <section class="section" data-section="messages" style="display:none">
+                <div id="messaging-panel"></div>
+            </section>
+
+            <section class="section" data-section="radio" style="display:none">
+                <div id="radio-panel"></div>
+            </section>
+
+            <section class="section" data-section="terminal" style="display:none">
+                <div id="terminal-panel" class="section__placeholder">
+                    <h2>Terminal</h2>
+                    <p>Coming in v0.7.4. Full shell access for technical operators.</p>
                 </div>
-                <div class="panel__body">
-                    <table class="packet-table">
-                        <thead>
-                            <tr>
-                                <th>Time</th>
-                                <th>Protocol</th>
-                                <th>Source</th>
-                                <th>Dest</th>
-                                <th>Type</th>
-                                <th>RSSI</th>
-                                <th>SNR</th>
-                                <th>Freq</th>
-                                <th>SF</th>
-                                <th>Hops</th>
-                                <th>Details</th>
-                            </tr>
-                        </thead>
-                        <tbody id="packet-tbody"></tbody>
-                    </table>
-                </div>
-            </div>
-        </section>
-    </main>
-    </div>
+            </section>
 
-    <div id="tab-stats" class="tab-content">
-        <div id="stats-panel" class="stats-panel">
-            <div class="stats-panel__loading">Loading stats...</div>
-        </div>
-    </div>
+            <section class="section" data-section="configuration/identity" style="display:none"><div id="cfg-identity-panel" class="section__placeholder"><h2>Configuration · Identity</h2><p>Skeleton; controls land alongside this section.</p></div></section>
+            <section class="section" data-section="configuration/radio" style="display:none"><div id="cfg-radio-panel" class="section__placeholder"><h2>Configuration · Radio</h2><p>Skeleton; controls migrate from the Radio tab.</p></div></section>
+            <section class="section" data-section="configuration/channels" style="display:none"><div id="cfg-channels-panel" class="section__placeholder"><h2>Configuration · Channels</h2><p>Skeleton; PSK list + add/remove.</p></div></section>
+            <section class="section" data-section="configuration/transmit" style="display:none"><div id="cfg-transmit-panel" class="section__placeholder"><h2>Configuration · Transmit</h2><p>Skeleton; TX power + duty cycle + relay.</p></div></section>
+            <section class="section" data-section="configuration/mqtt" style="display:none"><div id="cfg-mqtt-panel" class="section__placeholder"><h2>Configuration · MQTT</h2><p>Skeleton; broker + topic root + region.</p></div></section>
+            <section class="section" data-section="configuration/gps" style="display:none"><div id="cfg-gps-panel" class="section__placeholder"><h2>Configuration · GPS</h2><p>Skeleton; UART vs static. gpsd integration in v0.7.5.</p></div></section>
 
-    <div id="tab-messages" class="tab-content">
-        <div id="messaging-panel"></div>
-    </div>
+            <section class="section" data-section="settings/updates" style="display:none"><div id="settings-updates-panel" class="section__placeholder"><h2>Settings · Updates</h2><p>Skeleton; release channels + apply.</p></div></section>
+            <section class="section" data-section="settings/auth" style="display:none"><div id="settings-auth-panel" class="section__placeholder"><h2>Settings · Auth</h2><p>Skeleton; password change + viewer role + lockout.</p></div></section>
+            <section class="section" data-section="settings/dangerous" style="display:none"><div id="settings-dangerous-panel" class="section__placeholder"><h2>Settings · Dangerous</h2><p>Skeleton; restart + clear DB + wipe phantoms.</p></div></section>
+        </main>
 
-    <div id="tab-radio" class="tab-content">
-        <div id="radio-panel"></div>
+        <div id="node-backdrop" class="nd-backdrop"></div>
+        <div id="node-drawer" class="nd-drawer"></div>
     </div>
-
-    <div id="node-backdrop" class="nd-backdrop"></div>
-    <div id="node-drawer" class="nd-drawer"></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
@@ -200,6 +337,8 @@
     <script src="js/radio_settings.js"></script>
     <script src="js/stats_tab.js"></script>
     <script src="js/signout_controller.js"></script>
+    <script src="sidebar/router.js"></script>
+    <script src="sidebar/sidebar_controller.js"></script>
     <script src="js/app.js"></script>
 </body>
 </html>

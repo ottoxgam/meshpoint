@@ -36,6 +36,23 @@
 document.addEventListener('DOMContentLoaded', async () => {
     if (await _redirectIfSetupRequired()) return;
 
+    const identity = await _loadIdentity();
+
+    const router = new Router({
+        defaultRoute: 'dashboard',
+        allowedRoutes: [
+            'dashboard', 'stats', 'messages', 'radio', 'terminal',
+            'configuration/identity', 'configuration/radio',
+            'configuration/channels', 'configuration/transmit',
+            'configuration/mqtt', 'configuration/gps',
+            'settings/updates', 'settings/auth', 'settings/dangerous',
+        ],
+    });
+    const sidebar = new SidebarController({ router, identity });
+    sidebar.bind();
+    window.sidebar = sidebar;
+    router.start();
+
     new SignOutController('signout-btn').bind();
 
     const nodeMap = new NodeMap('map');
@@ -87,8 +104,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         _incrementPacketCount();
     });
 
-    _setupTabs();
-
     window.concentratorWS.connect();
 
     setInterval(() => {
@@ -99,9 +114,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     setInterval(_checkForUpdate, 300_000);
 });
 
+async function _loadIdentity() {
+    try {
+        const res = await fetch('/api/identity', { credentials: 'same-origin' });
+        if (!res.ok) return null;
+        return await res.json();
+    } catch (_) {
+        return null;
+    }
+}
+
 function _openMessagingForNode(node) {
-    const msgTab = document.querySelector('[data-tab="messages"]');
-    if (msgTab) msgTab.click();
+    if (window.sidebar && window.sidebar._router) {
+        window.sidebar._router.navigate('messages');
+    } else if (location.hash !== '#/messages') {
+        location.hash = '#/messages';
+    }
 
     setTimeout(() => {
         if (window.messagingPanel) {
@@ -126,21 +154,7 @@ async function _loadInitial(nodeMap, nodeList, packetFeed) {
         const nodesData = await nodesRes.json();
         const packetsData = await packetsRes.json();
 
-        _setText('device-name', device.device_name || 'Meshpoint');
-        if (device.device_id) {
-            const short = device.device_id.slice(0, 8);
-            const idEl = document.getElementById('device-id');
-            if (idEl) {
-                idEl.textContent = short;
-                idEl.title = device.device_id;
-                idEl.addEventListener('click', () => {
-                    navigator.clipboard.writeText(device.device_id).then(() => {
-                        idEl.textContent = 'copied!';
-                        setTimeout(() => { idEl.textContent = short; }, 1500);
-                    });
-                });
-            }
-        }
+        _setText('sidebar-device-name', device.device_name || 'Meshpoint');
 
         const nodes = nodesData.nodes || nodesData || [];
         nodeMap.loadNodes(nodes, device);
@@ -202,9 +216,16 @@ async function _updateStats() {
 
         _setText('stat-uptime-val', _formatUptime(device.uptime_seconds || 0));
 
-        _setText('node-count-badge', `${nodeCount.active} / ${nodeCount.count} nodes`);
-        _setText('packet-count-badge', `${traffic.total_packets} packets`);
-        _setText('version-badge', device.firmware_version ? `v${device.firmware_version}` : '--');
+        _setText('sidebar-device-name', device.device_name || 'Meshpoint');
+        const statusText = device.firmware_version
+            ? `online · v${device.firmware_version}`
+            : 'online';
+        _setText('sidebar-status-text', statusText);
+        const statusDot = document.getElementById('sidebar-status-dot');
+        if (statusDot) {
+            statusDot.classList.remove('status-dot--disconnected');
+            statusDot.classList.add('status-dot--connected');
+        }
 
         if (metricsRes.ok) {
             const metrics = await metricsRes.json();
@@ -239,40 +260,14 @@ async function _checkForUpdate() {
     try {
         const res = await fetch('/api/device/update-check');
         const data = await res.json();
-        const badge = document.getElementById('update-badge');
-        if (!badge) return;
-        if (data.update_available) {
-            badge.classList.remove('hidden');
-            badge.title = `Update available (local: ${data.local_version}, remote: ${data.remote_version})`;
-        } else {
-            badge.classList.add('hidden');
+        if (window.sidebar) {
+            window.sidebar.setStatusBadge(
+                'settings/updates',
+                data.update_available ? '1' : null,
+                'update'
+            );
         }
     } catch (_) {}
-}
-
-function _setupTabs() {
-    document.querySelectorAll('.tab-bar__btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const tabId = btn.dataset.tab;
-            document.querySelectorAll('.tab-bar__btn').forEach(b => b.classList.remove('tab-bar__btn--active'));
-            btn.classList.add('tab-bar__btn--active');
-
-            document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('tab-content--active'));
-            const target = document.getElementById(`tab-${tabId}`);
-            if (target) target.classList.add('tab-content--active');
-
-            if (tabId === 'messages' && window.messagingPanel) {
-                window.messagingPanel.onActivated();
-                window.messagingPanel.resetUnreadBadge();
-            }
-            if (tabId === 'radio' && window.radioSettings) {
-                window.radioSettings.onActivated();
-            }
-            if (tabId === 'stats' && window.statsTab) {
-                window.statsTab.refresh();
-            }
-        });
-    });
 }
 
 function _setText(id, value) {
