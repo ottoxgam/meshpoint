@@ -12,6 +12,8 @@ from src._so_compat_check import warn_if_stale_so_files
 from src.analytics.network_mapper import NetworkMapper
 from src.analytics.signal_analyzer import SignalAnalyzer
 from src.analytics.traffic_monitor import TrafficMonitor
+from src.api.audit import AuditLogWriter
+from src.api.audit import dependencies as audit_deps
 from src.api.auth import dependencies as auth_deps
 from src.api.auth.auth_bootstrap import AuthSubsystem, build_auth_subsystem
 from src.api.auth.dependencies import SESSION_COOKIE_NAME, require_auth
@@ -49,6 +51,7 @@ def create_app(config: AppConfig | None = None) -> FastAPI:
     auth_subsystem = build_auth_subsystem(config)
     auth_routes.init_routes(auth_subsystem.service)
     auth_deps.init_auth(auth_subsystem.jwt_service)
+    audit_deps.init_audit(AuditLogWriter())
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
