@@ -252,8 +252,12 @@ class MeshCoreTxClient:
         if not self.connected:
             return SendResult(success=False, error="Not connected")
         try:
+            contact = self._mc.get_contact_by_key_prefix(node_id)
+            if contact is None:
+                return SendResult(success=False, error=f"Contact not found for node {node_id}")
+            pubkey = contact.get("public_key", "")
             result = await asyncio.wait_for(
-                self._mc.commands.req_telemetry_sync(node_id),
+                self._mc.commands.req_telemetry_sync(pubkey),
                 timeout=10.0,
             )
             event_type = (
