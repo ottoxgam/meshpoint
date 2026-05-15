@@ -32,6 +32,7 @@ class TerminalPanelController {
         this.renderer = null;
         this.search = null;
         this.chrome = new window.TerminalChrome(rootEl);
+        this.splash = window.TerminalSplash ? new window.TerminalSplash() : null;
         this.drawer = new window.CommandDrawer(this.drawerEl, {
             toggleBtn: this.toggleBtn,
             closeBtn: this.closeBtn,
@@ -106,6 +107,9 @@ class TerminalPanelController {
         };
         this.client.onReady = (info) => {
             this.chrome.setSession(info);
+            if (this.splash && this.renderer) {
+                this.splash.render(this.renderer, info);
+            }
         };
         this.client.onOutput = (bytes) => {
             this.renderer?.write(new TextDecoder('utf-8', { fatal: false }).decode(bytes));
@@ -121,6 +125,7 @@ class TerminalPanelController {
         this.client.onClose = () => {
             this._handleDisconnected('idle', 'disconnected');
             this.chrome.reset();
+            if (this.splash) this.splash.reset();
         };
     }
 

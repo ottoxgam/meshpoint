@@ -51,6 +51,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     const sidebar = new SidebarController({ router, identity });
     sidebar.bind();
     window.sidebar = sidebar;
+
+    if (window.SinceLineController && window.lastVisitTracker) {
+        const sinceCtrl = new SinceLineController(router, window.lastVisitTracker);
+        const dashHost = document.getElementById('dashboard-since-host');
+        if (dashHost) {
+            sinceCtrl.register('dashboard', {
+                hostEl: dashHost,
+                label: 'packets',
+                getCount: () => (window.getTotalPackets ? window.getTotalPackets() : 0),
+            });
+        }
+        sinceCtrl.start();
+        window.sinceLineController = sinceCtrl;
+    }
+
     router.start();
 
     const logoFrame = document.getElementById('sidebar-logo-frame');
@@ -364,6 +379,8 @@ let _totalPackets = 0;
 function _incrementPacketCount() {
     _totalPackets++;
 }
+
+window.getTotalPackets = () => _totalPackets;
 
 function _formatUptime(totalSeconds) {
     const days = Math.floor(totalSeconds / 86400);

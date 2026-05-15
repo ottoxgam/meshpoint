@@ -18,6 +18,9 @@
     <link rel="stylesheet" href="css/build_stamp.css" />
     <link rel="stylesheet" href="sidebar/telemetry_rail.css" />
     <link rel="stylesheet" href="css/reconnect_pill.css" />
+    <link rel="stylesheet" href="css/init_checklist.css" />
+    <link rel="stylesheet" href="css/route_motion.css" />
+    <link rel="stylesheet" href="css/since_line.css" />
     <link rel="stylesheet" href="css/node_cards.css" />
     <link rel="stylesheet" href="css/node_drawer.css" />
     <link rel="stylesheet" href="css/messaging.css" />
@@ -250,6 +253,7 @@
             </header>
             <section class="section section--active" data-section="dashboard">
                 <main class="dashboard">
+                    <div id="dashboard-since-host"></div>
                     <section class="dashboard__stats">
                         <div class="stat-card" id="stat-nodes">
                             <div class="stat-card__label">Nodes Discovered</div>
@@ -637,6 +641,7 @@
     <script src="js/terminal/terminal_chrome.js"></script>
     <script src="js/terminal/terminal_renderer.js"></script>
     <script src="js/terminal/terminal_search_overlay.js"></script>
+    <script src="js/terminal/terminal_splash.js"></script>
     <script src="js/terminal/terminal_panel.js"></script>
     <script src="sidebar/router.js"></script>
     <script src="sidebar/sidebar_controller.js"></script>
@@ -651,6 +656,10 @@
     <script src="topbar/topbar_actions.js"></script>
     <script src="topbar/topbar_controller.js"></script>
     <script src="js/build_stamp.js"></script>
+    <script src="js/last_visit_tracker.js"></script>
+    <script src="js/since_line.js"></script>
+    <script src="js/since_line_controller.js"></script>
+    <script src="js/init_checklist.js"></script>
     <script src="js/app.js"></script>
 </body>
 </html>
