@@ -27,6 +27,10 @@ from src.api.dangerous.handlers import (
     build_restart_service_action,
     build_wipe_phantoms_action,
 )
+from src.api.meshcore_contacts import (
+    setup_meshcore_contact_enrichment,
+    sync_meshcore_contacts_to_nodes,
+)
 from src.api.routes import analytics, auth_config_routes, auth_routes, config_routes, dangerous_routes, device, identity_routes, messages, nodeinfo_routes, nodes, packets, public_radar_routes, stats_routes, system_metrics, telemetry, terminal_routes, update_check, update_routes
 from src.api.terminal import CommandCatalog, SessionManager
 from src.api.update import ReleaseChannelRegistry, UpdateApplier
@@ -122,6 +126,12 @@ def create_app(config: AppConfig | None = None) -> FastAPI:
         _setup_message_interception(
             pipeline, message_repo, config, meshcore_tx_ref
         )
+        setup_meshcore_contact_enrichment(pipeline, meshcore_tx_ref)
+        if meshcore_tx_ref and meshcore_tx_ref.connected:
+            import asyncio
+            asyncio.get_running_loop().create_task(
+                sync_meshcore_contacts_to_nodes(pipeline, meshcore_tx_ref)
+            )
 
         upstream = UpstreamClient(
             config.upstream, identity,
