@@ -278,9 +278,11 @@ class PipelineCoordinator:
             return
 
         logger.warning(
-            "Relay TX is EXPERIMENTAL and not production-ready. "
-            "Packets may not be re-transmitted correctly. "
-            "See ROADMAP.md for status."
+            "Relay TX is EXPERIMENTAL. The decoder->sendData path "
+            "is wired (v0.7.4) and decrypted Meshtastic packets are "
+            "now re-emitted via the relay radio, but full hardware "
+            "validation is still in progress. Encrypted packets and "
+            "MeshCore packets are intentionally skipped."
         )
 
         self._transmitter = MeshtasticTransmitter(self._config.relay)

@@ -63,6 +63,13 @@ class Packet:
 
     decoded_payload: Optional[dict[str, Any]] = None
     encrypted_payload: Optional[bytes] = None
+    # Inner application-payload bytes from the decrypted protobuf (the
+    # bytes that follow `portnum` in a Meshtastic Data message). The
+    # relay TX path needs these to call `interface.sendData(payload,
+    # portNum=…)` — without them the transmitter has no way to
+    # re-emit the packet on a separate radio. None for non-decrypted
+    # or non-Meshtastic packets.
+    raw_app_payload: Optional[bytes] = None
     decrypted: bool = False
 
     signal: Optional[SignalMetrics] = None

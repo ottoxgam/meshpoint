@@ -158,7 +158,7 @@ Any Channels listed in the YAML will show in the UI. Changes made in the UI will
 
 ## Smart Relay
 
-> **Status: experimental.** The smart relay path has not been hardware-validated end-to-end and is not recommended for production use yet. Treat this section as a configuration reference. Hardware-validated relay support will be called out in a release note when it lands.
+> **Status: experimental — TX path wired in v0.7.4.** The decoder now hands the inner application-payload bytes through to the transmitter, so decrypted Meshtastic packets are re-emitted with the correct portnum, hop decrement, and channel index. **Hardware validation is still in progress** — please report results in Discord or via a Github issue. Encrypted packets (no key match locally) and MeshCore packets are intentionally skipped to avoid garbage on the air.
 
 Connect a separate radio (T-Beam, Heltec, RAK4631) via USB to re-broadcast captured packets:
 
