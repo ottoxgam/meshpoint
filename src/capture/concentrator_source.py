@@ -34,7 +34,7 @@ class ConcentratorCaptureSource(CaptureSource):
         poll_interval_ms: int = 10,
         syncword: int = 0x2B,
         radio_config: Optional[RadioConfig] = None,
-        sx1261_spi_path: str = "/dev/spidev0.1",
+        sx1261_spi_path: str = "",
     ):
         self._wrapper = SX1302Wrapper(
             lib_path=lib_path,

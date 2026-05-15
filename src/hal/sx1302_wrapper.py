@@ -97,7 +97,7 @@ class SX1302Wrapper:
         self,
         lib_path: Optional[str] = None,
         spi_path: str = "/dev/spidev0.0",
-        sx1261_spi_path: str = "/dev/spidev0.1",
+        sx1261_spi_path: str = "",
     ):
         self._lib: Optional[ctypes.CDLL] = None
         self._lib_path = lib_path or self._find_library()
@@ -478,26 +478,43 @@ class SX1302Wrapper:
         this, every scan attempt returns -1 with the HAL stderr line
         ``ERROR: sx1261 is not enabled, no spectral scan``.
 
-        Best-effort: if the symbol is missing or the call fails
-        (e.g. wrong SPI path on a non-RAK carrier), log a warning
-        and continue. Spectral scan will be disabled but every
-        other concentrator path (RX, TX, native relay) keeps
-        working unchanged.
+        Best-effort and safety-first: if anything in this routine
+        fails — missing symbol, wrong SPI path, struct-layout
+        mismatch in our patched HAL, or the call itself returning
+        non-zero — we log loudly and return without raising. Every
+        other concentrator path (RX, TX, native relay) must keep
+        working even if spectral scan is unavailable.
         """
+        if self._sx1261_spi_path is None or self._sx1261_spi_path == "":
+            logger.info(
+                "SX1261 spi_path empty; spectral scan disabled, "
+                "falling back to packet-derived noise floor",
+            )
+            return
         if not hasattr(self._lib, "lgw_sx1261_setconf"):
             logger.info(
-                "libloragw lacks lgw_sx1261_setconf; spectral scan unavailable",
+                "libloragw lacks lgw_sx1261_setconf; "
+                "spectral scan unavailable",
             )
             return
 
-        conf = LgwConfSx1261S()
-        ctypes.memset(ctypes.byref(conf), 0, ctypes.sizeof(conf))
-        conf.enable = True
-        conf.spi_path = self._sx1261_spi_path.encode("ascii")
-        conf.rssi_offset = 0
-        conf.lbt_conf.enable = False
+        try:
+            conf = LgwConfSx1261S()
+            conf.enable = True
+            conf.spi_path = self._sx1261_spi_path.encode("ascii")
+            conf.rssi_offset = 0
+            conf.lbt_conf.enable = False
+            conf.lbt_conf.rssi_target = 0
+            conf.lbt_conf.nb_channel = 0
+            rc = self._lib.lgw_sx1261_setconf(ctypes.byref(conf))
+        except BaseException as exc:
+            logger.warning(
+                "lgw_sx1261_setconf raised (%s: %s); "
+                "spectral scan disabled, falling back to packet-derived noise floor",
+                type(exc).__name__, exc,
+            )
+            return
 
-        rc = self._lib.lgw_sx1261_setconf(ctypes.byref(conf))
         if rc != LGW_HAL_SUCCESS:
             logger.warning(
                 "lgw_sx1261_setconf(spi=%s) failed (rc=%d); "

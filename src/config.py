@@ -53,11 +53,18 @@ class RadioConfig:
     # Set to 0 to disable (falls back to packet-derived noise floor).
     spectral_scan_interval_seconds: float = 60.0
     # SPI device for the SX1261 companion radio used by spectral
-    # scan. RAK2287 / RAK5146 / SenseCap M1 default to /dev/spidev0.1
-    # (separate from the SX1302's /dev/spidev0.0). Some carriers
-    # daisy-chain the SX1261 behind the SX1302 and want this set to
-    # the same path as the SX1302 SPI device.
-    sx1261_spi_path: str = "/dev/spidev0.1"
+    # scan. Empty string disables the SX1261 init step entirely
+    # (default; spectral scan stays unavailable, packet-derived
+    # noise floor remains in use).
+    #
+    # On RAK2287 / RAK5146 / SenseCap M1 this is typically
+    # ``/dev/spidev0.1`` (separate from the SX1302's
+    # ``/dev/spidev0.0``). Some carriers daisy-chain the SX1261
+    # behind the SX1302's SPI router and want this set to the same
+    # path as the SX1302 SPI device. Wrong path = HAL refuses to
+    # ``lgw_start`` after our config attempt, so we ship empty by
+    # default and ask interested users to opt in explicitly.
+    sx1261_spi_path: str = ""
 
 
 @dataclass
