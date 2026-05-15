@@ -10,6 +10,12 @@ Full shell, on by default, admin-only. Verifies the terminal session lifecycle, 
 - Logged in as admin
 - Service running v0.7.4 RC
 
+### Backend coverage already green
+
+- [x] `tests/test_terminal_command_catalog.py` — unique ids, dangerous-flag invariants, JSON payload shape, category ordering.
+- [x] `tests/test_terminal_session_manager.py` — cap enforcement, lifecycle, double-close idempotency. Live PtySession tests skip on non-POSIX.
+- [x] `tests/test_terminal_routes.py` — admin-only on `/commands` and `/status`, anonymous + viewer rejection.
+
 ### Functional walkthrough
 
 1. [ ] Click Terminal in the sidebar. Expected: Terminal section opens, xterm.js renders, sticky session header strip shows `pi@meshpoint-...:/opt/meshpoint`, WS-health pulse dot mint green.

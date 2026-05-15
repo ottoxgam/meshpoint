@@ -162,7 +162,7 @@ Foundational chrome for v0.7.4. Lands Week 1 because every other feature renders
 
 ## 8. Audit log emission infrastructure
 
-**Status:** [ ] Not started  [ ] In progress  [ ] Pass  [ ] Blocked
+**Status:** [ ] Not started  [x] In progress  [ ] Pass  [ ] Blocked
 **Hardware:** `.141`
 
 ### Functional walkthrough
@@ -182,8 +182,9 @@ Foundational chrome for v0.7.4. Lands Week 1 because every other feature renders
 
 ### Acceptance
 
-- [ ] Every admin-mutating endpoint emits exactly one audit log row.
-- [ ] No secrets leak into the log.
+- [x] `tests/test_audit_log_writer.py` covers append-only JSONL writes, redaction of sensitive params, and `timed_action` context-manager success/error paths.
+- [ ] Every admin-mutating endpoint emits exactly one audit log row (verified end-to-end on `.141`).
+- [ ] No secrets leak into the log (spot-check on `.141` after running the auth + dangerous walkthroughs).
 
 ## Hardware-specific checks
 

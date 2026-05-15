@@ -4,7 +4,7 @@ Dashboard-driven update apply with release-channel branch picker and Phase 2 wat
 
 ## 1. Update apply — happy path (no-op tag bump)
 
-**Status:** [ ] Not started  [ ] In progress  [ ] Pass  [ ] Blocked
+**Status:** [ ] Not started  [x] In progress  [ ] Pass  [ ] Blocked
 **Hardware:** `.141` and `.15`
 **Pre-conditions:**
 - Logged in as admin
@@ -27,18 +27,20 @@ Dashboard-driven update apply with release-channel branch picker and Phase 2 wat
 
 ### Negative paths
 
-- [ ] POST `/api/update/apply` without cookie -> 401.
-- [ ] POST as viewer -> 403.
+- [x] POST `/api/update/apply` without cookie -> 401.
+- [x] POST as viewer -> 403.
 - [ ] POST while another apply is running -> 409 with `{"detail":"Update already in progress","lock_holder": <user>, "started_at": <iso>}`.
 
 ### Acceptance
 
+- [x] Backend chain unit-tested via `_RecorderRunner` test double in `tests/test_update_apply.py` (fetch -> checkout -> pull -> install -> restart, plus failure short-circuit + callback streaming).
+- [x] Route-level coverage in `tests/test_update_routes.py` (admin-only, channel resolution, payload shape).
 - [ ] Pass on `.141`.
 - [ ] Pass on `.15`.
 
 ## 2. Branch picker — curated channel switch
 
-**Status:** [ ] Not started  [ ] In progress  [ ] Pass  [ ] Blocked
+**Status:** [ ] Not started  [x] In progress  [ ] Pass  [ ] Blocked
 **Hardware:** `.141`
 
 ### Functional walkthrough
@@ -98,7 +100,7 @@ Dashboard-driven update apply with release-channel branch picker and Phase 2 wat
 
 ## 5. Watchdog auto-rollback on health failure
 
-**Status:** [ ] Not started  [ ] In progress  [ ] Pass  [ ] Blocked
+**Status:** [ ] Not started  [x] In progress  [ ] Pass  [ ] Blocked
 **Hardware:** `.141`
 **Pre-conditions:**
 - Test branch deliberately broken (e.g. service exits with error or `/api/health` returns 500)
@@ -122,6 +124,7 @@ Dashboard-driven update apply with release-channel branch picker and Phase 2 wat
 
 ### Acceptance
 
+- [x] `tests/test_update_watchdog.py` covers healthy-streak success, budget-exhaustion rollback trigger, streak-reset on unhealthy probe, and rollback-handler exception surfacing.
 - [ ] Rollback path works on a deliberately-broken test branch.
 - [ ] No data loss in `local.yaml` or SQLite during rollback.
 

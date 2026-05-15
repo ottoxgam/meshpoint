@@ -4,7 +4,7 @@ External contributions baked into v0.7.4. Each is verified post-merge.
 
 ## 1. MQTT hierarchical topic paths (cherry-pick from PR #35)
 
-**Status:** [ ] Not started  [ ] In progress  [ ] Pass  [ ] Blocked
+**Status:** [ ] Not started  [x] In progress  [ ] Pass  [ ] Blocked  -- cherry-pick landed at `7820f9f`; PR #35 closed with thanks-and-credit comment
 **Hardware:** `.141` and `.15`
 **Attribution:** `Co-Authored-By: iceice400`
 
@@ -28,9 +28,10 @@ External contributions baked into v0.7.4. Each is verified post-merge.
 
 ### Acceptance
 
-- [ ] Cherry-pick clean: `git log` shows the commit with `Co-Authored-By: iceice400` trailer.
-- [ ] PR #35 closed with thanks-and-credit comment.
-- [ ] CHANGELOG entry mentions iceice400's contribution.
+- [x] Cherry-pick clean: `git log` shows commit `7820f9f` with `Co-Authored-By: iceice400 <AdamAndrew2468@gmail.com>` trailer (matches the email associated with iceice400's GitHub account, so they will surface as a contributor on the repo front page when feat/v0.7.4 lands on main).
+- [x] PR #35 closed with thanks-and-credit comment.
+- [ ] CHANGELOG entry mentions iceice400's contribution (lands at version-bump time when Unreleased folds into the v0.7.4 release header).
+- [x] `tests/test_mqtt_topic_paths.py` and `tests/test_mqtt_publisher.py` green.
 
 ## 2. MeshCore Channel Config (ottoxgam contribution)
 
@@ -63,7 +64,7 @@ External contributions baked into v0.7.4. Each is verified post-merge.
 
 ## 3. MeshCore nodes missing from dashboard map (PR #51)
 
-**Status:** [ ] Not started  [ ] In progress  [ ] Pass  [ ] Blocked
+**Status:** [ ] Not started  [x] In progress  [ ] Pass  [ ] Blocked  -- cherry-picked at `8cbd730`; PR #51 closed (CHANGELOG bullet moved from v0.7.3.x to Unreleased so it folds into v0.7.4 at release)
 **Hardware:** `.141` (has MeshCore USB)
 
 ### Functional walkthrough
@@ -84,9 +85,10 @@ External contributions baked into v0.7.4. Each is verified post-merge.
 
 ### Acceptance
 
-- [ ] Pre-merge: PR rebased onto `feat/v0.7.4`.
+- [x] Pre-merge: cherry-picked onto `feat/v0.7.4` at `8cbd730`.
+- [x] `tests/test_meshcore_usb.py::TestMeshcoreDecoderNodeExtraction` green (3 cases: advertisement-with-position, advertisement-without-position, standalone POSITION-packet path).
 - [ ] Post-merge: visible on `.141` map.
-- [ ] CHANGELOG entry credits the PR author.
+- [ ] CHANGELOG entry credits the PR author (lands at version-bump time).
 
 ## Cross-cherry-pick checks
 
