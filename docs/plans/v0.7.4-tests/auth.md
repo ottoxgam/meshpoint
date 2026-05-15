@@ -4,7 +4,7 @@ Auth completeness work. Builds on v0.7.3 auth foundation.
 
 ## 1. Password change UI
 
-**Status:** [ ] Not started  [ ] In progress  [ ] Pass  [ ] Blocked
+**Status:** [ ] Not started  [x] In progress  [ ] Pass  [ ] Blocked
 **Hardware:** `.141` and `.15`, plus browser-only role gate verification
 **Pre-conditions:**
 - Logged in as admin
@@ -26,21 +26,21 @@ Auth completeness work. Builds on v0.7.3 auth foundation.
 
 ### Negative paths
 
-- [ ] POST `/api/auth/change_password` without cookie -> 401.
+- [x] POST `/api/auth/change_password` without cookie -> 401.
 - [ ] POST as viewer with valid viewer cookie + valid current viewer password -> 200 (viewers may change their own password).
-- [ ] POST with wrong current_password -> 401 with `{"detail":"Current password incorrect"}`.
-- [ ] POST with new_password length < 8 -> 400.
+- [x] POST with wrong current_password -> 401 with `{"detail":"invalid_current_password"}`.
+- [x] POST with new_password length < 8 -> 400.
 - [ ] POST during rate-limited window -> 429 with Retry-After.
 
 ### Acceptance
 
 - [ ] Pass on `.141` and `.15`.
-- [ ] Test `tests/test_password_change.py` covers all paths.
-- [ ] Audit log entry written on success.
+- [x] Test `tests/test_auth_routes_v074.py` covers route paths; `tests/test_auth_service_v074.py` covers service.
+- [x] Audit log entry written on success (`action: "auth.change_password"`).
 
 ## 2. Sign out everywhere
 
-**Status:** [ ] Not started  [ ] In progress  [ ] Pass  [ ] Blocked
+**Status:** [ ] Not started  [x] In progress  [ ] Pass  [ ] Blocked
 **Hardware:** `.141`, plus a second browser session for verification
 **Pre-conditions:**
 - Logged in as admin in two browsers (or two devices)
@@ -58,19 +58,19 @@ Auth completeness work. Builds on v0.7.3 auth foundation.
 
 ### Negative paths
 
-- [ ] POST `/api/auth/logout_all` without cookie -> 401.
-- [ ] POST as viewer -> 403 (this is admin-only because it affects all sessions).
-- [ ] After a successful logout_all, the old JWT cookie value cannot be reused (session_version mismatch).
+- [x] POST `/api/auth/logout_all` without cookie -> 401.
+- [x] POST as viewer -> 403 (this is admin-only because it affects all sessions).
+- [x] After a successful logout_all, the old JWT cookie value cannot be reused (session_version mismatch).
 
 ### Acceptance
 
 - [ ] Pass on `.141`.
-- [ ] Test `tests/test_logout_all.py` covers all paths.
-- [ ] Audit log entry written.
+- [x] Tests `tests/test_auth_routes_v074.py::TestLogoutAllRoute` cover route + role enforcement.
+- [x] Audit log entry written (`action: "auth.logout_all"`).
 
 ## 3. Configurable lockout from dashboard
 
-**Status:** [ ] Not started  [ ] In progress  [ ] Pass  [ ] Blocked
+**Status:** [ ] Not started  [x] In progress  [ ] Pass  [ ] Blocked
 **Hardware:** `.141` and `.15`
 
 ### Functional walkthrough
@@ -86,21 +86,21 @@ Auth completeness work. Builds on v0.7.3 auth foundation.
 
 ### Negative paths
 
-- [ ] POST `/api/config/auth_lockout` with `lockout_attempts: 0` -> 400 (must be >= 1).
-- [ ] POST with `lockout_attempts: 101` -> 400 (must be <= 100).
-- [ ] POST with `lockout_cooldown_minutes: 0` -> 400 (must be >= 1).
-- [ ] POST with `lockout_cooldown_minutes: 1441` -> 400 (must be <= 1440).
-- [ ] POST without cookie -> 401.
-- [ ] POST as viewer -> 403.
+- [x] PUT `/api/config/auth_lockout` with `lockout_attempts: 0` -> 422 (range validated by pydantic).
+- [ ] PUT with `lockout_attempts: 101` -> 422 (must be <= 100).
+- [ ] PUT with `lockout_cooldown_minutes: 0` -> 422 (must be >= 1).
+- [ ] PUT with `lockout_cooldown_minutes: 1441` -> 422 (must be <= 1440).
+- [ ] PUT without cookie -> 401.
+- [ ] PUT as viewer -> 403.
 
 ### Acceptance
 
 - [ ] Pass on `.141`.
-- [ ] `tests/test_lockout_config.py` covers all paths.
+- [x] `tests/test_auth_routes_v074.py::TestAuthLockoutConfigRoute` and `tests/test_auth_service_v074.py::TestUpdateLockoutConfig` cover service + route.
 
 ## 4. Viewer role end-to-end
 
-**Status:** [ ] Not started  [ ] In progress  [ ] Pass  [ ] Blocked
+**Status:** [ ] Not started  [x] In progress  [ ] Pass  [ ] Blocked
 **Hardware:** `.141` (admin setup) and `.15` (viewer login verification)
 **Pre-conditions:**
 - Admin account active on `.141`
@@ -130,9 +130,9 @@ Auth completeness work. Builds on v0.7.3 auth foundation.
 
 ### Negative paths
 
-- [ ] `GET /api/identity` for viewer returns `available_sections` array WITHOUT `terminal`, `settings.dangerous`, `settings.updates`.
-- [ ] `GET /api/identity` for admin returns `available_sections` array WITH all sections.
-- [ ] Viewer attempting `POST /api/auth/logout_all` -> 403.
+- [x] `GET /api/identity` for viewer returns `available_sections` array WITHOUT `terminal`, `settings.dangerous`, `settings.updates`.
+- [x] `GET /api/identity` for admin returns `available_sections` array WITH all sections.
+- [x] Viewer attempting `POST /api/auth/logout_all` -> 403.
 
 ### Hardware-specific checks
 
