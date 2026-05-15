@@ -108,6 +108,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.tabTitleTelemetry = tabTitle;
     }
 
+    if (window.themeController) window.themeController.init();
+    _bootCommandPaletteAndKeymap(router);
+    _wireSoundEvents();
+
     new SignOutController('signout-btn').bind();
 
     _bootAuthPanel(router);
@@ -423,4 +427,90 @@ async function _redirectIfSetupRequired() {
         /* silent: the dashboard handles its own auth via 401 interception */
     }
     return false;
+}
+
+function _bootCommandPaletteAndKeymap(router) {
+    if (!window.CommandPalette || !window.KeymapOverlay) return;
+
+    const palette = new CommandPalette();
+    palette.init();
+    window.commandPalette = palette;
+
+    const keymap = new KeymapOverlay();
+    keymap.init();
+    window.keymapOverlay = keymap;
+
+    const routeCommands = [
+        ['dashboard', 'Go to Dashboard', 'Pages'],
+        ['stats', 'Go to Stats', 'Pages'],
+        ['messages', 'Go to Messages', 'Pages'],
+        ['radio', 'Go to Radio', 'Pages'],
+        ['terminal', 'Go to Terminal', 'Pages'],
+        ['configuration/identity', 'Go to Configuration · Identity', 'Configuration'],
+        ['configuration/radio', 'Go to Configuration · Radio', 'Configuration'],
+        ['configuration/channels', 'Go to Configuration · Channels', 'Configuration'],
+        ['settings/auth', 'Go to Settings · Auth', 'Settings'],
+        ['settings/updates', 'Go to Settings · Updates', 'Settings'],
+        ['settings/dangerous', 'Go to Settings · Dangerous', 'Settings'],
+    ];
+    routeCommands.forEach(([routeId, label, group]) => {
+        palette.register({
+            id: `route:${routeId}`,
+            label,
+            group,
+            icon: '→',
+            run: () => router.navigate(routeId),
+        });
+    });
+
+    palette.register({
+        id: 'theme:cycle',
+        label: 'Cycle theme (dark / high-contrast / sunlight)',
+        group: 'View',
+        icon: '◐',
+        run: () => {
+            if (!window.themeController) return;
+            const next = window.themeController.cycle();
+            console.info('theme →', next);
+        },
+    });
+
+    palette.register({
+        id: 'sound:toggle',
+        label: 'Toggle UI sounds',
+        group: 'View',
+        icon: '♪',
+        run: () => {
+            if (!window.soundEngine) return;
+            const next = !window.soundEngine.isEnabled();
+            window.soundEngine.setEnabled(next);
+            console.info('sounds →', next ? 'on' : 'off');
+        },
+    });
+
+    palette.register({
+        id: 'help:keymap',
+        label: 'Show keyboard shortcuts',
+        group: 'Help',
+        icon: '?',
+        run: () => keymap.open(),
+    });
+
+    keymap.registerAll([
+        { keys: ['Ctrl', 'K'], label: 'Open command palette', group: 'Global' },
+        { keys: ['?'], label: 'Show this shortcuts overlay', group: 'Global' },
+        { keys: ['Esc'], label: 'Close any modal / overlay', group: 'Global' },
+        { keys: ['Ctrl', 'Shift', 'C'], label: 'Copy terminal selection', group: 'Terminal' },
+        { keys: ['Ctrl', 'Shift', 'V'], label: 'Paste into terminal', group: 'Terminal' },
+        { keys: ['Ctrl', 'Shift', 'F'], label: 'Find in terminal output', group: 'Terminal' },
+    ]);
+}
+
+function _wireSoundEvents() {
+    if (!window.soundEngine || !window.concentratorWS) return;
+    const ws = window.concentratorWS;
+    if (typeof ws.on === 'function') {
+        ws.on('connected', () => window.soundEngine.play('connect'));
+        ws.on('disconnected', () => window.soundEngine.play('disconnect'));
+    }
 }
