@@ -1,0 +1,429 @@
+/* Terminal section styles. Single responsibility: layout chrome
+   for the xterm.js host, the status indicator, the action bar, and
+   the right-hand command drawer. xterm internals come from the
+   xterm.css bundle; we only style the wrappers around it. */
+
+.terminal-panel {
+    --term-bg: #0c0f14;
+    --term-border: rgba(255, 255, 255, 0.08);
+    --term-accent: var(--brand-amber, #ffb84d);
+    --term-danger: #ff6b6b;
+    --term-success: #44d39a;
+    color: #f3f4f6;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 16px clamp(12px, 2vw, 24px);
+    gap: 14px;
+    overflow: hidden;
+}
+
+.terminal-panel__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    animation: termFadeIn 280ms ease-out both;
+}
+
+.terminal-panel__title-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.terminal-panel__title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.terminal-panel__status {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.06);
+    color: rgba(243, 244, 246, 0.6);
+    transition: background 200ms ease, color 200ms ease;
+}
+
+.terminal-panel__status[data-state="connecting"] {
+    background: rgba(255, 184, 77, 0.15);
+    color: var(--term-accent);
+}
+
+.terminal-panel__status[data-state="connected"] {
+    background: rgba(68, 211, 154, 0.15);
+    color: var(--term-success);
+}
+
+.terminal-panel__status[data-state="error"] {
+    background: rgba(255, 107, 107, 0.15);
+    color: var(--term-danger);
+}
+
+.terminal-panel__actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.terminal-button {
+    appearance: none;
+    border: 1px solid var(--term-border);
+    background: rgba(255, 255, 255, 0.03);
+    color: rgba(243, 244, 246, 0.85);
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 500;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 160ms ease, transform 120ms ease,
+        border-color 160ms ease;
+}
+
+.terminal-button:hover:not(:disabled) {
+    transform: translateY(-1px);
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.terminal-button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.terminal-button--primary {
+    background: var(--term-accent);
+    color: #1a1d24;
+    border-color: transparent;
+}
+
+.terminal-button--ghost {
+    background: transparent;
+}
+
+.terminal-button--danger {
+    color: var(--term-danger);
+    border-color: rgba(255, 107, 107, 0.3);
+}
+
+.terminal-panel__body {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
+    flex: 1;
+    min-height: 0;
+    position: relative;
+}
+
+.terminal-panel__shell {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-height: 0;
+    background: var(--term-bg);
+    border: 1px solid var(--term-border);
+    border-radius: 12px;
+    padding: 10px;
+    overflow: hidden;
+    animation: termFadeIn 320ms ease-out both;
+}
+
+.terminal-host {
+    flex: 1;
+    min-height: 0;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.terminal-host .xterm,
+.terminal-host .xterm-viewport {
+    background: var(--term-bg) !important;
+}
+
+.terminal-panel__hint {
+    margin: 0;
+    font-size: 12px;
+    color: rgba(243, 244, 246, 0.5);
+    padding: 0 4px;
+}
+
+.terminal-drawer {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: min(380px, 90vw);
+    height: 100vh;
+    background: rgba(15, 18, 24, 0.96);
+    backdrop-filter: blur(8px);
+    border-left: 1px solid var(--term-border);
+    box-shadow: -16px 0 36px rgba(0, 0, 0, 0.4);
+    transform: translateX(100%);
+    transition: transform 260ms cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+    z-index: 60;
+}
+
+.terminal-drawer--open {
+    transform: translateX(0);
+}
+
+.terminal-drawer__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--term-border);
+}
+
+.terminal-drawer__title {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.terminal-drawer__close {
+    appearance: none;
+    border: none;
+    background: transparent;
+    color: rgba(243, 244, 246, 0.6);
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+    transition: color 160ms ease, transform 120ms ease;
+}
+
+.terminal-drawer__close:hover {
+    color: var(--term-accent);
+    transform: scale(1.1);
+}
+
+.terminal-drawer__hint {
+    padding: 12px 20px 0;
+    margin: 0;
+    font-size: 12px;
+    color: rgba(243, 244, 246, 0.5);
+}
+
+.terminal-drawer__list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 14px 20px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.terminal-drawer__group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.terminal-drawer__category {
+    margin: 0;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    color: rgba(243, 244, 246, 0.5);
+    font-weight: 600;
+}
+
+.terminal-drawer__buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.terminal-drawer__button {
+    appearance: none;
+    border: 1px solid var(--term-border);
+    background: rgba(255, 255, 255, 0.03);
+    color: rgba(243, 244, 246, 0.9);
+    border-radius: 8px;
+    padding: 10px 12px;
+    text-align: left;
+    cursor: pointer;
+    display: grid;
+    gap: 4px;
+    transition: background 160ms ease, transform 120ms ease,
+        border-color 160ms ease;
+    font-family: inherit;
+}
+
+.terminal-drawer__button:hover {
+    background: rgba(255, 184, 77, 0.06);
+    border-color: rgba(255, 184, 77, 0.3);
+    transform: translateX(-1px);
+}
+
+.terminal-drawer__button--danger {
+    border-color: rgba(255, 107, 107, 0.3);
+}
+
+.terminal-drawer__button--danger:hover {
+    background: rgba(255, 107, 107, 0.08);
+}
+
+.terminal-drawer__button-label {
+    font-weight: 600;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.terminal-drawer__button--danger .terminal-drawer__button-label::after {
+    content: 'dangerous';
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    padding: 2px 6px;
+    border-radius: 999px;
+    background: rgba(255, 107, 107, 0.18);
+    color: var(--term-danger);
+    font-weight: 500;
+}
+
+.terminal-drawer__button-cmd code {
+    font-family: 'JetBrains Mono', Menlo, Consolas, monospace;
+    font-size: 12px;
+    color: rgba(243, 244, 246, 0.65);
+    background: rgba(255, 255, 255, 0.04);
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.terminal-drawer__button-desc {
+    font-size: 11px;
+    color: rgba(243, 244, 246, 0.45);
+}
+
+.terminal-drawer__error {
+    color: var(--term-danger);
+    font-size: 13px;
+}
+
+.danger-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+}
+
+.danger-modal--open {
+    pointer-events: auto;
+}
+
+.danger-modal__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0);
+    transition: background 200ms ease;
+}
+
+.danger-modal--open .danger-modal__backdrop {
+    background: rgba(0, 0, 0, 0.55);
+}
+
+.danger-modal__sheet {
+    position: relative;
+    background: #15181f;
+    border: 1px solid rgba(255, 107, 107, 0.32);
+    border-radius: 14px;
+    padding: 24px;
+    width: min(440px, 92vw);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+    transform: translateY(12px);
+    opacity: 0;
+    transition: transform 220ms ease, opacity 220ms ease;
+}
+
+.danger-modal--open .danger-modal__sheet {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+.danger-modal__title {
+    margin: 0 0 8px;
+    font-size: 16px;
+    color: var(--term-danger);
+    font-weight: 600;
+}
+
+.danger-modal__desc {
+    margin: 0 0 12px;
+    color: rgba(243, 244, 246, 0.7);
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.danger-modal__code {
+    background: #0c0f14;
+    border: 1px solid var(--term-border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin: 0 0 14px;
+    color: rgba(243, 244, 246, 0.85);
+    font-family: 'JetBrains Mono', Menlo, Consolas, monospace;
+    font-size: 12px;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.danger-modal__field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 16px;
+}
+
+.danger-modal__label {
+    font-size: 12px;
+    color: rgba(243, 244, 246, 0.6);
+}
+
+.danger-modal__input {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--term-border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    color: #f3f4f6;
+    font-family: 'JetBrains Mono', Menlo, Consolas, monospace;
+    font-size: 13px;
+}
+
+.danger-modal__input:focus {
+    outline: none;
+    border-color: var(--term-danger);
+}
+
+.danger-modal__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+@keyframes termFadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .terminal-panel__head,
+    .terminal-panel__shell { animation: none; }
+    .terminal-drawer { transition: none; }
+    .danger-modal__sheet { transition: none; }
+}
+
+@media (max-width: 720px) {
+    .terminal-drawer { width: 100vw; }
+}

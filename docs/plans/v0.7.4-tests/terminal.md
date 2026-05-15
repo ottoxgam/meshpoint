@@ -4,7 +4,7 @@ Full shell, on by default, admin-only. Verifies the terminal session lifecycle, 
 
 ## 1. Terminal — first open and basic command execution
 
-**Status:** [ ] Not started  [ ] In progress  [ ] Pass  [ ] Blocked
+**Status:** [ ] Not started  [x] In progress  [ ] Pass  [ ] Blocked
 **Hardware:** `.141` and `.15`
 **Pre-conditions:**
 - Logged in as admin
