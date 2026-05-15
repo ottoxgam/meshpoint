@@ -16,6 +16,8 @@
     <link rel="stylesheet" href="sidebar/sidebar.css" />
     <link rel="stylesheet" href="topbar/topbar.css" />
     <link rel="stylesheet" href="css/build_stamp.css" />
+    <link rel="stylesheet" href="sidebar/telemetry_rail.css" />
+    <link rel="stylesheet" href="css/reconnect_pill.css" />
     <link rel="stylesheet" href="css/node_cards.css" />
     <link rel="stylesheet" href="css/node_drawer.css" />
     <link rel="stylesheet" href="css/messaging.css" />
@@ -181,6 +183,25 @@
                 </ul>
                 <span class="sidebar__active-bar" id="sidebar-active-bar" aria-hidden="true"></span>
             </nav>
+
+            <section class="telemetry-rail" id="telemetry-rail" aria-label="Live device telemetry">
+                <div class="telemetry-rail__row">
+                    <span class="telemetry-rail__label">Uptime</span>
+                    <span class="telemetry-rail__value" id="telemetry-uptime">--</span>
+                </div>
+                <div class="telemetry-rail__row">
+                    <span class="telemetry-rail__label">Sessions</span>
+                    <span class="telemetry-rail__value" id="telemetry-sessions">--</span>
+                </div>
+                <div class="telemetry-rail__noise" aria-label="Noise floor">
+                    <div class="telemetry-rail__noise-head">
+                        <span class="telemetry-rail__noise-label">Noise floor</span>
+                        <span class="telemetry-rail__noise-value" id="telemetry-noise-value">--</span>
+                        <span class="telemetry-rail__noise-bw" id="telemetry-noise-bw">--</span>
+                    </div>
+                    <canvas class="telemetry-rail__noise-canvas" id="telemetry-noise-canvas" aria-hidden="true"></canvas>
+                </div>
+            </section>
 
             <footer class="sidebar__footer">
                 <div class="sidebar__role">
@@ -615,6 +636,10 @@
     <script src="js/terminal/terminal_panel.js"></script>
     <script src="sidebar/router.js"></script>
     <script src="sidebar/sidebar_controller.js"></script>
+    <script src="sidebar/noise_floor_sparkline.js"></script>
+    <script src="sidebar/telemetry_rail.js"></script>
+    <script src="js/reconnect_storyboard.js"></script>
+    <script src="js/tab_title_telemetry.js"></script>
     <script src="topbar/topbar_lamp.js"></script>
     <script src="topbar/topbar_identity_badge.js"></script>
     <script src="topbar/topbar_radio_chip.js"></script>

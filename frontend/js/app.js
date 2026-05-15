@@ -66,6 +66,26 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.buildStamp = stamp;
     }
 
+    const telemetryRoot = document.getElementById('telemetry-rail');
+    if (telemetryRoot && window.SidebarTelemetryRail) {
+        const rail = new SidebarTelemetryRail(telemetryRoot, window.concentratorWS);
+        rail.init();
+        window.telemetryRail = rail;
+    }
+
+    if (window.ReconnectStoryboard) {
+        const story = new ReconnectStoryboard(window.concentratorWS);
+        story.mount();
+        story.init();
+        window.reconnectStoryboard = story;
+    }
+
+    if (window.TabTitleTelemetry) {
+        const tabTitle = new TabTitleTelemetry(window.concentratorWS);
+        tabTitle.init();
+        window.tabTitleTelemetry = tabTitle;
+    }
+
     new SignOutController('signout-btn').bind();
 
     _bootAuthPanel(router);

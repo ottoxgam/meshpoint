@@ -38,6 +38,7 @@ from src.log_format import print_banner, print_packet, setup_logging
 from src.models.device_identity import DeviceIdentity, _stable_device_id
 from src.models.packet import Packet
 from src.storage.message_repository import MessageRepository
+from src.api.telemetry.noise_floor import NoiseFloorTracker
 from src.transmit.nodeinfo_broadcaster import (
     NodeInfoBroadcaster,
     clamp_interval_minutes,
@@ -52,6 +53,8 @@ ws_manager = WebSocketManager()
 pipeline: PipelineCoordinator | None = None
 upstream: UpstreamClient | None = None
 nodeinfo_broadcaster: NodeInfoBroadcaster | None = None
+noise_floor_tracker = NoiseFloorTracker()
+_noise_floor_emitter_task = None
 
 
 def create_app(config: AppConfig | None = None) -> FastAPI:
@@ -129,6 +132,12 @@ def create_app(config: AppConfig | None = None) -> FastAPI:
         if nodeinfo_broadcaster is not None:
             await nodeinfo_broadcaster.start()
 
+        global _noise_floor_emitter_task
+        import asyncio
+        _noise_floor_emitter_task = asyncio.get_running_loop().create_task(
+            _noise_floor_emitter_loop(noise_floor_tracker, ws_manager)
+        )
+
         _init_routes(
             pipeline, config, identity, auth_subsystem, tx_service, message_repo
         )
@@ -136,6 +145,12 @@ def create_app(config: AppConfig | None = None) -> FastAPI:
         print_banner(config)
         logger.info("Meshpoint started -- listening for packets")
         yield
+        if _noise_floor_emitter_task is not None:
+            _noise_floor_emitter_task.cancel()
+            try:
+                await _noise_floor_emitter_task
+            except BaseException:
+                pass
         if nodeinfo_broadcaster is not None:
             await nodeinfo_broadcaster.stop()
         await upstream.stop()
@@ -931,8 +946,36 @@ def _serve_auth_page(static_dir: Path, filename: str) -> FileResponse:
 
 def _on_packet_received(packet: Packet) -> None:
     import asyncio
+    if packet.signal is not None:
+        noise_floor_tracker.update(
+            rssi_dbm=packet.signal.rssi,
+            snr_db=packet.signal.snr,
+            bandwidth_khz=packet.signal.bandwidth_khz,
+        )
     try:
         loop = asyncio.get_running_loop()
         loop.create_task(ws_manager.broadcast("packet", packet.to_dict()))
     except RuntimeError:
+        pass
+
+
+async def _noise_floor_emitter_loop(
+    tracker: NoiseFloorTracker, manager: WebSocketManager,
+    interval_seconds: float = 1.0,
+) -> None:
+    """Broadcast the current noise floor snapshot once per second.
+
+    Runs for the lifetime of the FastAPI app. Cancelled cleanly on
+    shutdown via the lifespan context manager.
+    """
+    import asyncio
+    try:
+        while True:
+            await asyncio.sleep(interval_seconds)
+            try:
+                await manager.broadcast("noise_floor", tracker.snapshot())
+            except Exception:
+                # Never let a single broadcast error kill the loop.
+                pass
+    except asyncio.CancelledError:
         pass
