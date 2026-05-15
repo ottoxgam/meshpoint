@@ -199,6 +199,10 @@ class MeshcoreUsbCaptureSource(CaptureSource):
                 "MeshCore USB source started on %s @ %d baud",
                 port, self._baud_rate,
             )
+            if self._debug_rx:
+                logger.info(
+                    "MeshCore USB debug RX enabled (MESHPOINT_DEBUG_MESHCORE_RX=1)"
+                )
         except Exception:
             logger.exception(
                 "Failed to start MeshCore USB source on %s", port
