@@ -52,6 +52,12 @@ class RadioConfig:
     # (~50 ms). Default 60 s gives ~0.08% downtime; raise for less.
     # Set to 0 to disable (falls back to packet-derived noise floor).
     spectral_scan_interval_seconds: float = 60.0
+    # SPI device for the SX1261 companion radio used by spectral
+    # scan. RAK2287 / RAK5146 / SenseCap M1 default to /dev/spidev0.1
+    # (separate from the SX1302's /dev/spidev0.0). Some carriers
+    # daisy-chain the SX1261 behind the SX1302 and want this set to
+    # the same path as the SX1302 SPI device.
+    sx1261_spi_path: str = "/dev/spidev0.1"
 
 
 @dataclass

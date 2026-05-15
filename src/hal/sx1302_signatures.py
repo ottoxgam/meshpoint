@@ -16,6 +16,7 @@ from src.hal.sx1302_types import (
     LgwConfBoardS,
     LgwConfRxifS,
     LgwConfRxrfS,
+    LgwConfSx1261S,
     LgwPktRxS,
     LgwPktTxS,
     LgwTxGainLutS,
@@ -84,3 +85,7 @@ def apply_signatures(lib: ctypes.CDLL) -> None:
 
     lib.lgw_time_on_air.restype = ctypes.c_uint32
     lib.lgw_time_on_air.argtypes = [ctypes.POINTER(LgwPktTxS)]
+
+    if hasattr(lib, "lgw_sx1261_setconf"):
+        lib.lgw_sx1261_setconf.restype = ctypes.c_int
+        lib.lgw_sx1261_setconf.argtypes = [ctypes.POINTER(LgwConfSx1261S)]
