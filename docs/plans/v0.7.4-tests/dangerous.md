@@ -1,30 +1,34 @@
 # Dangerous Actions — Restart, Clear DB, Wipe Phantoms, Force NodeInfo, Restart Concentrator
 
-Settings > Dangerous subsection. Proportional confirmation: toast for fast-recovery actions, simple "Are you sure?" modal for moderate-stakes actions. No GitHub-style typed-confirmation theater.
+Settings > Dangerous subsection. Every action routes through the shared typed-confirmation modal: the operator types the action's exact label (GitHub-repo-deletion pattern) before the Invoke button activates. The friction is the point -- these are admin endpoints exposed to anyone who phishes a session cookie.
 
-## 1. Restart service (toast confirmation)
+## 1. Restart service (typed-confirmation)
 
-**Status:** [ ] Not started  [ ] In progress  [ ] Pass  [ ] Blocked
+**Status:** [ ] Not started  [x] In progress  [ ] Pass  [ ] Blocked
 **Hardware:** `.141`
 
 ### Functional walkthrough
 
-1. [ ] Settings > Dangerous. Expected: card layout, one card per action.
-2. [ ] Restart Service card has description ("Restarts the meshpoint systemd service. Recovers in ~5 seconds.") and a Restart button.
-3. [ ] Click Restart. Expected:
-       - One-click action; toast notification "Restarting service..." with progress bar.
+1. [ ] Settings > Dangerous. Expected: card layout, one card per action; danger pills graded by stakes.
+2. [ ] Restart Service card has description ("Restarts the meshpoint systemd service. Recovers in ~5 seconds.") and an Invoke button.
+3. [ ] Click Invoke. Expected: typed-confirmation modal opens. Modal copy lists the action label, the consequence, and a text input with "Type `restart service` to confirm".
+4. [ ] Type a wrong value (e.g. `restart`). Confirm button stays disabled.
+5. [ ] Type the exact label. Confirm enables. Click Confirm. Expected:
+       - Modal closes.
+       - Inline status on the card: "Restarting service…" with progress.
        - WS disconnects briefly; reconnects automatically.
-       - Toast updates to "Service restarted. Reconnected." within 10s.
-       - Audit log `action: "restart_service", result: "success"`.
-4. [ ] Page does NOT reload, but live data resumes.
+       - Inline status updates to "Service restarted." within 10s.
+       - Audit log `action: "dangerous.restart_service", result: "success"`.
+6. [ ] Page does NOT reload, but live data resumes.
 
 ### Acceptance
 
-- [ ] Single click triggers restart. No modal.
-- [ ] Toast feedback present.
+- [x] Backend tests cover invoke + role gate (`tests/test_dangerous_actions.py`, `tests/test_dangerous_routes.py`).
+- [ ] Typed-confirmation flow blocks the action until the label is typed exactly.
+- [ ] Inline status feedback present.
 - [ ] Audit log entry.
 
-## 2. Restart concentrator (toast confirmation)
+## 2. Restart concentrator (typed-confirmation)
 
 **Status:** [ ] Not started  [ ] In progress  [ ] Pass  [ ] Blocked
 **Hardware:** `.141` and `.15`
@@ -45,7 +49,7 @@ Settings > Dangerous subsection. Proportional confirmation: toast for fast-recov
 - [ ] Toast feedback.
 - [ ] Audit log entry.
 
-## 3. Force NodeInfo broadcast (toast confirmation)
+## 3. Force NodeInfo broadcast (typed-confirmation)
 
 **Status:** [ ] Not started  [ ] In progress  [ ] Pass  [ ] Blocked
 **Hardware:** `.141`
@@ -63,7 +67,7 @@ Settings > Dangerous subsection. Proportional confirmation: toast for fast-recov
 - [ ] One-click send works.
 - [ ] Toast and audit confirm.
 
-## 4. Clear local DB (modal confirmation)
+## 4. Clear local DB (typed-confirmation)
 
 **Status:** [ ] Not started  [ ] In progress  [ ] Pass  [ ] Blocked
 **Hardware:** `.141`
@@ -86,7 +90,7 @@ Settings > Dangerous subsection. Proportional confirmation: toast for fast-recov
 - [ ] DB is cleared.
 - [ ] Audit log entry.
 
-## 5. Wipe phantom nodes (modal confirmation)
+## 5. Wipe phantom nodes (typed-confirmation)
 
 **Status:** [ ] Not started  [ ] In progress  [ ] Pass  [ ] Blocked
 **Hardware:** `.141`
@@ -138,8 +142,8 @@ Settings > Dangerous subsection. Proportional confirmation: toast for fast-recov
 
 ## Failure modes to watch
 
-- **Toast disappears too quickly to read** — auto-dismiss timer too short. 6s minimum, with progress bar.
-- **Modal asks for typed confirmation** — design regression; revert to simple Yes/Cancel modal.
+- **Inline status disappears too quickly to read** — auto-dismiss timer too short. 6s minimum, with progress bar.
+- **Confirm enables before the typed label matches exactly** — typed-confirmation regression; the input must compare case-sensitive against the action's exact label.
 - **Restart service does not actually restart** — endpoint returns 200 but service continues. Check `subprocess.Popen(['systemctl', 'restart', 'meshpoint'])` runs with sudo properly.
 - **Clear local DB also wipes config** — destructive bug. Verify endpoint only deletes packet/node tables, not the schema or config file.
 - **Wipe phantoms also removes real nodes** — query bug. Phantom criteria must be `packet_count = 0 AND name IS NULL AND short_id IS NULL AND first_seen < <some-floor>`.

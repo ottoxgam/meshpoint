@@ -117,7 +117,7 @@ Auth completeness work. Builds on v0.7.3 auth foundation.
 
 ### Functional walkthrough — viewer login on `.15`
 
-5. [ ] On `.15`, open `http://192.168.0.15:8080/login` in a private window.
+5. [ ] On `.15`, open `http://<dashboard-host>:8080/login` in a private window.
 6. [ ] Enter username `viewer`, viewer password. Expected: redirected to dashboard.
 7. [ ] Topbar / sidebar role pill reads "Viewer".
 8. [ ] Sidebar items visible to viewer: Dashboard, Stats, Messages, Radio. Configuration group: read-only listing of subsections (no Save buttons inside).

@@ -18,7 +18,7 @@ Foundational chrome for v0.7.4. Lands Week 1 because every other feature renders
 
 ### Functional walkthrough
 
-1. [ ] Open `http://192.168.0.141:8080`. Expected: sidebar renders on the left at ~240px wide, persistent, content fills the right pane.
+1. [ ] Open `http://<dashboard-host>:8080` (e.g. via the `.141` unit's hostname or LAN address). Expected: sidebar renders on the left at ~240px wide, persistent, content fills the right pane.
 2. [ ] Header of the sidebar shows: Meshpoint logo, device name (`Meshpoint-RAKv2-...`), status pill ("online · v0.7.4").
 3. [ ] Primary items visible in order: Dashboard, Stats, Messages, Radio, Terminal.
 4. [ ] Configuration group (expandable) sits below Terminal, default state collapsed.
@@ -28,7 +28,7 @@ Foundational chrome for v0.7.4. Lands Week 1 because every other feature renders
 8. [ ] Click an item (e.g. Stats). Expected: 2px vertical mint accent bar slides from the previous active item to the new one (FLIP), URL updates to `#/stats`, content cross-fades 220ms.
 9. [ ] Browser back button. Expected: previous section reactivates, accent bar slides back.
 10. [ ] Browser forward button. Expected: forward navigation re-applies.
-11. [ ] Direct-link `http://192.168.0.141:8080/#/configuration/channels`. Expected: dashboard loads with Configuration group expanded, Channels active.
+11. [ ] Direct-link `http://<dashboard-host>:8080/#/configuration/channels`. Expected: dashboard loads with Configuration group expanded, Channels active.
 
 ### Status badges
 

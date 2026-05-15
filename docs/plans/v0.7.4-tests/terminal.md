@@ -101,7 +101,7 @@ Full shell, on by default, admin-only. Verifies the terminal session lifecycle, 
 
 1. [ ] Log in as viewer on `.15`.
 2. [ ] Sidebar does not show Terminal item. Expected.
-3. [ ] In DevTools, attempt `new WebSocket('ws://192.168.0.15:8080/api/terminal/ws')` with viewer cookie. Expected: server calls `accept()` then `close(code=4401)` (or 4403 if viewer-detected). Browser receives close code, no PTY allocated.
+3. [ ] In DevTools, attempt `new WebSocket('ws://<dashboard-host>:8080/api/terminal/ws')` with viewer cookie. Expected: server calls `accept()` then `close(code=4401)` (or 4403 if viewer-detected). Browser receives close code, no PTY allocated.
 4. [ ] In DevTools, attempt `fetch('/api/terminal/commands')`. Expected: 403.
 
 ### Acceptance
