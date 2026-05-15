@@ -350,6 +350,23 @@ sudo systemctl restart meshpoint
 
 The local dashboard shows an orange update indicator when a new version is available on GitHub.
 
+> **Hard-refresh the browser after every update.** The dashboard SPA is heavily cached. After `systemctl restart meshpoint`, press Ctrl+Shift+R (Cmd+Shift+R on macOS) on each open dashboard tab so the browser pulls the new frontend JS instead of the stale copy. Skipping this is the most common cause of "looks broken after upgrade" reports.
+
+### Upgrading from v0.7.2 or earlier to v0.7.3 (one-time)
+
+v0.7.3 adds local dashboard authentication, which requires two new Python dependencies (`bcrypt` and `PyJWT`). A bare `git pull` does **not** install them: the service will fail to start with `ModuleNotFoundError: No module named 'bcrypt'` (or `'jwt'`) until the venv is refreshed. Re-run `install.sh` after pulling:
+
+```bash
+cd /opt/meshpoint
+sudo git pull origin main
+sudo bash scripts/install.sh
+sudo systemctl restart meshpoint
+```
+
+`install.sh` is idempotent: it reuses the existing venv, just runs `pip install -r requirements.txt` to pick up the new wheels, and reinstalls the systemd unit. After restart, open `http://<pi-ip>:8080` in your browser and you'll be redirected to `/setup` to set an admin password (8-character minimum). All subsequent dashboard access requires sign-in. If you forget the password later, recover via SSH: `sudo meshpoint reset-password`.
+
+Once you're on v0.7.3 or later, future minor updates inside the v0.7.x series go back to plain `git pull + restart` unless a release explicitly notes new dependencies.
+
 ### Upgrading from v0.6.x or earlier (one-time)
 
 v0.7.0 ships the core modules as Python source instead of pre-compiled `.so` binaries. If your install predates v0.7.0, `git pull` alone is not sufficient: Python's import machinery would prefer the stale `.cpython-*.so` files over the new source and you'd silently keep running v0.6.x code. Re-run `install.sh` after pulling to clean them up:
