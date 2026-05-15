@@ -193,7 +193,21 @@ class MeshcoreDecoder:
             return None
         if not packet.decoded_payload:
             return None
-        return Telemetry(
-            node_id=packet.source_id,
-            timestamp=packet.timestamp,
-        )
+
+        t = Telemetry(node_id=packet.source_id, timestamp=packet.timestamp)
+
+        _LPP_MAP = {
+            "temperature":  "temperature",
+            "humidity":     "humidity",
+            "barometer":    "barometric_pressure",
+            "voltage":      "voltage",
+            "percentage":   "battery_level",
+        }
+
+        for entry in packet.decoded_payload.get("lpp", []):
+            lpp_type = entry.get("type")
+            field = _LPP_MAP.get(lpp_type)
+            if field is not None:
+                setattr(t, field, entry.get("value"))
+
+        return t

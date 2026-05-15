@@ -97,6 +97,25 @@ class NodeDrawer {
             div.appendChild(mapBtn);
         }
 
+        const telemBtn = document.createElement('button');
+        telemBtn.className = 'nd-action-btn';
+        telemBtn.textContent = 'Request Telemetry';
+        telemBtn.addEventListener('click', async () => {
+            telemBtn.disabled = true;
+            telemBtn.textContent = 'Requesting...';
+            try {
+                const res = await fetch(`/api/nodes/${n.node_id}/req-telemetry`, { method: 'POST' });
+                telemBtn.textContent = res.ok ? 'Sent' : 'Failed';
+            } catch {
+                telemBtn.textContent = 'Failed';
+            }
+            setTimeout(() => {
+                telemBtn.textContent = 'Request Telemetry';
+                telemBtn.disabled = false;
+            }, 2000);
+        });
+        div.appendChild(telemBtn);
+
         return div;
     }
 

@@ -147,6 +147,24 @@ def _build_advertisement(
     )
 
 
+def _build_telemetry_response(
+    payload: dict, signal: Optional[SignalMetrics]
+) -> Packet:
+    pubkey_pre = payload.get("pubkey_pre", payload.get("pubkey_prefix", "unknown"))
+    source_id = pubkey_pre[:12] if len(pubkey_pre) >= 12 else pubkey_pre
+    return Packet(
+        packet_id=_generate_id(),
+        source_id=source_id,
+        destination_id="self",
+        protocol=Protocol.MESHCORE,
+        packet_type=PacketType.TELEMETRY,
+        decoded_payload={"lpp": payload.get("lpp", [])},
+        signal=signal,
+        timestamp=_parse_timestamp(payload.get("timestamp")),
+        decrypted=True,
+    )
+
+
 def _build_raw_data(
     payload: dict, signal: Optional[SignalMetrics]
 ) -> Packet:
@@ -205,6 +223,8 @@ _BUILDERS = {
     "contact_message": _build_contact_message,
     "channel_message": _build_channel_message,
     "advertisement": _build_advertisement,
+    "new_contact": _build_advertisement,
+    "telemetry_response": _build_telemetry_response,
     "raw_data": _build_raw_data,
     "rx_log_data": _build_rx_log_data,
 }

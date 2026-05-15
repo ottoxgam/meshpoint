@@ -247,6 +247,33 @@ class MeshCoreTxClient:
             logger.exception("Failed to read MeshCore radio info")
             return None
 
+    async def req_telemetry_sync(self, node_id: str) -> SendResult:
+        """Send a telemetry request to a MeshCore contact."""
+        if not self.connected:
+            return SendResult(success=False, error="Not connected")
+        try:
+            result = await asyncio.wait_for(
+                self._mc.commands.req_telemetry_sync(node_id),
+                timeout=10.0,
+            )
+            event_type = (
+                result.type.value
+                if hasattr(result.type, "value")
+                else str(result.type)
+            )
+            logger.info(
+                "MeshCore telemetry request sent to %s: %s", node_id, event_type
+            )
+            await self._run_post_command()
+            return SendResult(success=True, event_type=event_type)
+        except asyncio.TimeoutError:
+            await self._run_post_command()
+            return SendResult(success=False, error="Request timed out")
+        except Exception as exc:
+            logger.exception("MeshCore telemetry request failed")
+            await self._run_post_command()
+            return SendResult(success=False, error=str(exc))
+
     async def get_contacts(self) -> list[dict]:
         """Retrieve the companion's contact list."""
         if not self.connected:

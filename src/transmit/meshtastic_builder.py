@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 BROADCAST_ADDR = 0xFFFFFFFF
 PORTNUM_TEXT_MESSAGE = 1
 PORTNUM_NODEINFO = 4
+PORTNUM_TELEMETRY = 67
 HW_MODEL_PRIVATE_HW = 255
 
 
@@ -99,12 +100,45 @@ class MeshtasticPacketBuilder:
         )
         return header + ciphertext
 
+    def build_telemetry_request(
+        self,
+        dest: int,
+        source_id: int,
+        packet_id: int,
+        channel_key: bytes | None = None,
+        channel_hash: int = 0x08,
+        hop_limit: int = 3,
+        hop_start: int = 3,
+    ) -> bytes | None:
+        """Build a TELEMETRY_APP packet with want_response=true.
+
+        Asks the destination node to reply with its current device metrics.
+        The payload is an empty Telemetry protobuf; want_response (Data field 5)
+        tells the firmware to generate a response.
+        """
+        inner = self._serialize_data(PORTNUM_TELEMETRY, b"", want_response=True)
+        ciphertext = self._crypto.encrypt_meshtastic(
+            inner, packet_id, source_id, key=channel_key
+        )
+        if ciphertext is None:
+            logger.error("Encryption failed for telemetry request %d", packet_id)
+            return None
+        header = self._build_header(
+            dest, source_id, packet_id,
+            hop_limit=hop_limit,
+            hop_start=hop_start,
+            want_ack=False,
+            channel_hash=channel_hash,
+        )
+        return header + ciphertext
+
     @staticmethod
-    def _serialize_data(portnum: int, payload: bytes) -> bytes:
+    def _serialize_data(portnum: int, payload: bytes, want_response: bool = False) -> bytes:
         """Serialize a mesh_pb2.Data protobuf manually.
 
         Avoids importing the full protobuf library at runtime.
-        Wire format: field 1 (portnum) varint + field 2 (payload) bytes.
+        Wire format: field 1 (portnum) varint + field 2 (payload) bytes
+        + optional field 5 (want_response) bool.
         """
         result = bytearray()
         result.append(0x08)
@@ -112,6 +146,9 @@ class MeshtasticPacketBuilder:
         result.append(0x12)
         result.extend(_encode_varint(len(payload)))
         result.extend(payload)
+        if want_response:
+            result.append(0x28)  # field 5, varint wire type
+            result.append(0x01)
         return bytes(result)
 
     @staticmethod

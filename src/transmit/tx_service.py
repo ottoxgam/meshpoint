@@ -225,6 +225,51 @@ class TxService:
             error=f"lgw_send returned {result_code}",
         )
 
+    async def req_telemetry(self, node_id: str, protocol: str) -> SendResult:
+        """Request telemetry from a node, routing to the correct TX backend."""
+        if protocol == "meshcore":
+            if not self.meshcore_enabled:
+                return SendResult(success=False, protocol="meshcore", error="MeshCore not connected")
+            mc = await self._meshcore_tx.req_telemetry_sync(node_id)
+            return SendResult(success=mc.success, protocol="meshcore", error=mc.error)
+
+        # Meshtastic path
+        if not self.meshtastic_enabled:
+            return SendResult(success=False, protocol="meshtastic", error="Meshtastic TX not available")
+        builder = self._get_builder()
+        if builder is None or not hasattr(builder, "build_telemetry_request"):
+            return SendResult(success=False, protocol="meshtastic", error="Packet builder unavailable")
+
+        dest_int = self._resolve_destination(node_id, Protocol.MESHTASTIC)
+        packet_id = self._next_packet_id()
+        channel_hash, channel_key = self._resolve_channel(0)
+        hop_limit = self._config.hop_limit if self._config else DEFAULT_HOP_LIMIT
+
+        packet_bytes = builder.build_telemetry_request(
+            dest=dest_int,
+            source_id=self._source_node_id,
+            packet_id=packet_id,
+            channel_key=channel_key,
+            channel_hash=channel_hash,
+            hop_limit=hop_limit,
+            hop_start=hop_limit,
+        )
+        if packet_bytes is None:
+            return SendResult(success=False, protocol="meshtastic", error="Packet build failed")
+
+        tx_pkt = self._build_hal_packet(packet_bytes)
+        airtime_ms = await self._get_airtime(tx_pkt)
+
+        if self._duty and not self._duty.check_budget(airtime_ms):
+            return SendResult(success=False, protocol="meshtastic", error="Duty cycle limit reached", airtime_ms=airtime_ms)
+
+        result_code = await asyncio.to_thread(self._wrapper.send, tx_pkt)
+        if result_code == 0:
+            if self._duty:
+                self._duty.record_tx(airtime_ms)
+            return SendResult(success=True, protocol="meshtastic", packet_id=f"{packet_id:08x}", timestamp=time.time(), airtime_ms=airtime_ms)
+        return SendResult(success=False, protocol="meshtastic", error=f"lgw_send returned {result_code}")
+
     async def _send_meshtastic(
         self,
         text: str,
