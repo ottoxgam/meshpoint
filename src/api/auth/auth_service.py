@@ -246,6 +246,26 @@ class AuthService:
             cooldown_minutes=cooldown_minutes,
         )
 
+    def update_session_lifetime(self, minutes: int) -> int:
+        """Apply a new session lifetime (JWT exp) in-memory and persist.
+
+        ``minutes`` is the number of minutes a freshly-issued login
+        cookie remains valid before the user is bounced to ``/login``.
+        Range is enforced by the route layer (5 min .. 30 days); we
+        defensively reject non-positive values here as a final guard.
+
+        Existing sessions keep their original ``exp`` claim -- only
+        the next login (or password change) carries the new lifetime.
+        Operators who want everyone re-issued under the new lifetime
+        immediately can pair this with "Sign out everywhere".
+        """
+        if minutes <= 0:
+            raise ValueError("session lifetime must be positive minutes")
+        self._jwt.set_expiry_minutes(minutes)
+        self._config.jwt_expiry_minutes = minutes
+        self._persist({"jwt_expiry_minutes": minutes})
+        return minutes
+
     def setup_viewer(
         self, password: str
     ) -> ViewerSetupSuccess | ViewerSetupRejected:

@@ -169,6 +169,41 @@ class TestUpdateLockoutConfig(unittest.TestCase):
             svc.update_lockout_config(max_attempts=0, cooldown_minutes=5)
 
 
+class TestUpdateSessionLifetime(unittest.TestCase):
+    def test_persists_and_updates_jwt_service(self) -> None:
+        svc, cfg, jwt, spy = _fresh_admin_service()
+        result = svc.update_session_lifetime(720)
+        self.assertEqual(result, 720)
+        self.assertEqual(cfg.jwt_expiry_minutes, 720)
+        self.assertEqual(jwt.expiry_minutes, 720)
+        self.assertEqual(spy.payloads[-1], {"jwt_expiry_minutes": 720})
+
+    def test_zero_minutes_rejected(self) -> None:
+        svc, *_ = _fresh_admin_service()
+        with self.assertRaises(ValueError):
+            svc.update_session_lifetime(0)
+
+    def test_negative_minutes_rejected(self) -> None:
+        svc, *_ = _fresh_admin_service()
+        with self.assertRaises(ValueError):
+            svc.update_session_lifetime(-5)
+
+    def test_jwt_issued_after_update_carries_new_lifetime(self) -> None:
+        import jwt as _jwt
+
+        svc, _cfg, jwt_service, _spy = _fresh_admin_service()
+        svc.update_session_lifetime(1440)
+        token = jwt_service.issue(subject="admin", role="admin")
+        decoded = _jwt.decode(
+            token, _SECRET, algorithms=["HS256"],
+            options={"require": ["exp", "iat"]},
+        )
+        ttl_seconds = decoded["exp"] - decoded["iat"]
+        # Allow ±5s clock slack; delta should be ~24 hours.
+        self.assertGreater(ttl_seconds, 1440 * 60 - 5)
+        self.assertLess(ttl_seconds, 1440 * 60 + 5)
+
+
 class TestViewerLifecycle(unittest.TestCase):
     def test_setup_viewer_writes_hash_and_enables_flag(self) -> None:
         svc, cfg, _jwt, spy = _fresh_admin_service()

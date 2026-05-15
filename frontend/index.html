@@ -482,6 +482,34 @@
                                 <p class="auth-status" data-lockout-status aria-live="polite"></p>
                             </form>
                         </article>
+
+                        <article class="auth-card" data-session-lifetime-root>
+                            <h3 class="auth-card__title">Session lifetime</h3>
+                            <p class="auth-card__hint">How long a fresh login stays valid before the dashboard bounces you back to <code>/login</code>. Pick a preset or set custom minutes (5 min – 30 days). Existing sessions keep their original expiry until they run out.</p>
+                            <form class="auth-card__form" data-session-lifetime-form autocomplete="off">
+                                <div class="auth-presets" role="group" aria-label="Session lifetime presets">
+                                    <button class="auth-preset" type="button" data-session-lifetime-preset="60"    aria-pressed="false">1 hour</button>
+                                    <button class="auth-preset" type="button" data-session-lifetime-preset="480"   aria-pressed="false">8 hours</button>
+                                    <button class="auth-preset" type="button" data-session-lifetime-preset="1440"  aria-pressed="false">1 day</button>
+                                    <button class="auth-preset" type="button" data-session-lifetime-preset="10080" aria-pressed="false">7 days</button>
+                                    <button class="auth-preset" type="button" data-session-lifetime-preset="43200" aria-pressed="false">30 days</button>
+                                </div>
+                                <div class="auth-field-row">
+                                    <label class="auth-field">
+                                        <span class="auth-field__label">Custom (minutes)</span>
+                                        <input class="auth-field__input" type="number" min="5" max="43200" required value="480" data-session-lifetime-input>
+                                    </label>
+                                    <div class="auth-field auth-field--readout">
+                                        <span class="auth-field__label">Equivalent</span>
+                                        <span class="auth-readout" data-session-lifetime-preview>8 hours</span>
+                                    </div>
+                                </div>
+                                <div class="auth-card__actions">
+                                    <button class="auth-button auth-button--primary" type="submit" data-session-lifetime-submit>Save lifetime</button>
+                                </div>
+                                <p class="auth-status" data-session-lifetime-status aria-live="polite"></p>
+                            </form>
+                        </article>
                     </div>
                 </div>
             </section>
@@ -525,6 +553,7 @@
     <script src="js/settings/sign_out_all_form.js"></script>
     <script src="js/settings/viewer_role_form.js"></script>
     <script src="js/settings/lockout_config_form.js"></script>
+    <script src="js/settings/session_lifetime_form.js"></script>
     <script src="js/settings/auth_panel_controller.js"></script>
     <script src="js/settings/update_log_view.js"></script>
     <script src="js/settings/release_notes_view.js"></script>

@@ -32,6 +32,9 @@ class AuthPanelController {
         this.lockout = new window.LockoutConfigForm(
             rootEl.querySelector('[data-lockout-root]')
         );
+        this.sessionLifetime = new window.SessionLifetimeForm(
+            rootEl.querySelector('[data-session-lifetime-root]')
+        );
     }
 
     bind() {
@@ -39,21 +42,46 @@ class AuthPanelController {
         this.signOutAll.bind();
         this.viewerRole.bind();
         this.lockout.bind();
+        this.sessionLifetime.bind();
     }
 
     async refresh() {
-        const identity = await this._fetchIdentity();
-        if (!identity) return;
-        this.viewerRole.setEnabled(!!identity.viewer_enabled);
-        // Lockout values are not yet exposed on /api/identity to keep
-        // the public response small. The defaults shown match the
-        // server-side defaults; once the operator saves, the form
-        // round-trip confirms the persisted values.
+        const [identity, settings] = await Promise.all([
+            this._fetchIdentity(),
+            this._fetchAuthSettings(),
+        ]);
+        if (identity) {
+            this.viewerRole.setEnabled(!!identity.viewer_enabled);
+        }
+        if (settings) {
+            this.lockout.setValues(
+                settings.lockout_attempts,
+                settings.lockout_cooldown_minutes,
+            );
+            this.sessionLifetime.setValues({
+                current: settings.session_lifetime_minutes,
+                min: settings.session_lifetime_min_minutes,
+                max: settings.session_lifetime_max_minutes,
+            });
+        }
     }
 
     async _fetchIdentity() {
         try {
             const response = await fetch('/api/identity', {
+                credentials: 'same-origin',
+                cache: 'no-store',
+            });
+            if (!response.ok) return null;
+            return await response.json();
+        } catch (_e) {
+            return null;
+        }
+    }
+
+    async _fetchAuthSettings() {
+        try {
+            const response = await fetch('/api/config/auth_settings', {
                 credentials: 'same-origin',
                 cache: 'no-store',
             });

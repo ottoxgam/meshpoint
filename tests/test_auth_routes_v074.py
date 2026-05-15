@@ -194,5 +194,57 @@ class TestAuthLockoutConfigRoute(_RoutesV074TestBase):
         self.assertEqual(resp.status_code, 422)
 
 
+class TestAuthSessionLifetimeRoute(_RoutesV074TestBase):
+    def test_admin_updates_session_lifetime(self) -> None:
+        resp = self.client.put(
+            "/api/config/auth_session_lifetime",
+            json={"session_lifetime_minutes": 1440},
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.json()["session_lifetime_minutes"], 1440)
+        self.assertEqual(self.svc.config.jwt_expiry_minutes, 1440)
+
+    def test_below_minimum_rejected(self) -> None:
+        resp = self.client.put(
+            "/api/config/auth_session_lifetime",
+            json={"session_lifetime_minutes": 1},
+        )
+        self.assertEqual(resp.status_code, 422)
+
+    def test_above_maximum_rejected(self) -> None:
+        resp = self.client.put(
+            "/api/config/auth_session_lifetime",
+            json={"session_lifetime_minutes": 10**9},
+        )
+        self.assertEqual(resp.status_code, 422)
+
+    def test_anonymous_rejected(self) -> None:
+        self.client.cookies.clear()
+        resp = self.client.put(
+            "/api/config/auth_session_lifetime",
+            json={"session_lifetime_minutes": 1440},
+        )
+        self.assertEqual(resp.status_code, 401)
+
+
+class TestAuthSettingsGetRoute(_RoutesV074TestBase):
+    def test_admin_reads_current_settings(self) -> None:
+        self.svc.update_lockout_config(max_attempts=9, cooldown_minutes=11)
+        self.svc.update_session_lifetime(720)
+        resp = self.client.get("/api/config/auth_settings")
+        self.assertEqual(resp.status_code, 200)
+        body = resp.json()
+        self.assertEqual(body["lockout_attempts"], 9)
+        self.assertEqual(body["lockout_cooldown_minutes"], 11)
+        self.assertEqual(body["session_lifetime_minutes"], 720)
+        self.assertEqual(body["session_lifetime_min_minutes"], 5)
+        self.assertEqual(body["session_lifetime_max_minutes"], 30 * 24 * 60)
+
+    def test_anonymous_rejected(self) -> None:
+        self.client.cookies.clear()
+        resp = self.client.get("/api/config/auth_settings")
+        self.assertEqual(resp.status_code, 401)
+
+
 if __name__ == "__main__":
     unittest.main()

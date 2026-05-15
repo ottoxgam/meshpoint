@@ -198,7 +198,11 @@ class WebAuthConfig:
     admin_password_hash: str = ""
     viewer_password_hash: str = ""
     jwt_secret: str = ""
-    jwt_expiry_minutes: int = 60
+    # Session lifetime in minutes. v0.7.4 raised the default from 60 to
+    # 480 (8 hours) after operators reported being kicked back to /login
+    # mid-shift. Configurable from Settings -> Auth -> Session lifetime,
+    # range-checked at the route layer (5 min .. 30 days).
+    jwt_expiry_minutes: int = 480
     allow_read_only: bool = False
     lockout_attempts: int = 5
     lockout_cooldown_minutes: int = 5

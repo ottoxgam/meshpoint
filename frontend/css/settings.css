@@ -220,6 +220,58 @@
     color: var(--auth-success);
 }
 
+/* Preset chip group used by the session-lifetime form */
+.auth-presets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 4px;
+}
+
+.auth-preset {
+    appearance: none;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.04);
+    color: rgba(243, 244, 246, 0.8);
+    border-radius: 999px;
+    padding: 6px 14px;
+    font-size: 12px;
+    font-weight: 500;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 160ms ease, color 160ms ease, border-color 160ms ease, transform 120ms ease;
+}
+
+.auth-preset:hover {
+    background: rgba(255, 184, 77, 0.08);
+    border-color: rgba(255, 184, 77, 0.32);
+    color: var(--auth-accent, #ffb84d);
+    transform: translateY(-1px);
+}
+
+.auth-preset--active {
+    background: rgba(255, 184, 77, 0.18);
+    border-color: rgba(255, 184, 77, 0.55);
+    color: var(--auth-accent, #ffb84d);
+    box-shadow: 0 0 0 1px rgba(255, 184, 77, 0.18) inset;
+}
+
+/* Read-only "equivalent" cell next to the custom-minutes input */
+.auth-field--readout {
+    justify-content: center;
+}
+
+.auth-readout {
+    font-family: 'JetBrains Mono', Menlo, Consolas, monospace;
+    font-size: 13px;
+    color: rgba(243, 244, 246, 0.85);
+    background: rgba(255, 184, 77, 0.06);
+    border: 1px solid rgba(255, 184, 77, 0.18);
+    border-radius: 8px;
+    padding: 9px 12px;
+    text-align: center;
+}
+
 .auth-pill[data-state="disabled"] {
     background: rgba(255, 255, 255, 0.06);
     color: rgba(243, 244, 246, 0.5);

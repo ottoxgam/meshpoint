@@ -61,8 +61,26 @@ class JwtSessionService:
         if session_version < 1:
             raise ValueError("session_version must be >= 1")
         self._secret = secret
+        self._expiry_minutes = expiry_minutes
         self._expiry = timedelta(minutes=expiry_minutes)
         self._session_version = session_version
+
+    @property
+    def expiry_minutes(self) -> int:
+        return self._expiry_minutes
+
+    def set_expiry_minutes(self, minutes: int) -> None:
+        """Live-update the session TTL applied to subsequently-issued tokens.
+
+        Existing tokens keep their original ``exp`` claim until they
+        expire naturally; only :meth:`issue` calls made after this
+        method runs see the new lifetime. Callers (the auth service)
+        are responsible for persisting the change to ``local.yaml``.
+        """
+        if minutes <= 0:
+            raise ValueError("expiry_minutes must be positive")
+        self._expiry_minutes = minutes
+        self._expiry = timedelta(minutes=minutes)
 
     @staticmethod
     def generate_secret() -> str:
