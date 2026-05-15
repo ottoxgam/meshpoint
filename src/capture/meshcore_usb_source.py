@@ -16,6 +16,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import os
 from typing import AsyncIterator, Optional
 
 from src.capture.base import CaptureSource
@@ -62,6 +63,7 @@ class MeshcoreUsbCaptureSource(CaptureSource):
         self._reconnect_task: Optional[asyncio.Task] = None
         self._last_rf_signal: Optional[SignalMetrics] = None
         self._last_event_at: float = 0.0
+        self._debug_rx = os.getenv("MESHPOINT_DEBUG_MESHCORE_RX") == "1"
 
     @property
     def name(self) -> str:
@@ -365,6 +367,15 @@ class MeshcoreUsbCaptureSource(CaptureSource):
         # Any event from the device is proof the connection is alive.
         # The health check loop uses this to skip its active probe.
         self._last_event_at = asyncio.get_event_loop().time()
+        if self._debug_rx:
+            etype = (
+                event.type.value
+                if hasattr(event.type, "value")
+                else str(event.type)
+            )
+            logger.debug(
+                "MESHCORE_RX type=%s payload=%r", etype, event.payload
+            )
         try:
             self._queue.put_nowait(event)
         except asyncio.QueueFull:
