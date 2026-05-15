@@ -252,6 +252,7 @@ class MeshCoreTxClient:
         if not self.connected:
             return SendResult(success=False, error="Not connected")
         try:
+            await self._mc.ensure_contacts()
             contact = self._mc.get_contact_by_key_prefix(node_id)
             if contact is None:
                 return SendResult(success=False, error=f"Contact not found for node {node_id}")
