@@ -33,6 +33,7 @@ One row per feature, one column per hardware unit. Box gets checked when the per
 | MeshCore Channel Config (otto)   | [ ]           | [ ]               | n/a            | [ ]          |
 | MeshCore map fix (PR #51)        | [ ]           | [ ]               | n/a            | [ ]          |
 | Native relay (onboard SX1302)    | [x] .141      | [ ]               | n/a            | n/a          |
+| Spectral-scan noise floor        | [ ]           | [ ]               | n/a            | [ ]          |
 
 ## Per-feature template
 
@@ -154,6 +155,7 @@ Single deliverable: a screen recording of an admin walking through the entire da
 - [cherry-picks.md](cherry-picks.md) — MQTT hierarchical paths, MeshCore Channel Config, PR #51 map fix
 - [polish.md](polish.md) — real radar blips on auth pages, smart upgrade indicator
 - [relay.md](relay.md) — native onboard SX1302 relay (identity-preserving)
+- [spectral_scan.md](spectral_scan.md) — SX1302 spectral scan noise floor
 
 ## Pre-release gate
 

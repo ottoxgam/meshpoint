@@ -15,6 +15,11 @@ from dataclasses import dataclass
 from typing import Optional
 
 from src.hal.concentrator_config import ConcentratorChannelPlan
+from src.hal.sx1302_signatures import apply_signatures
+from src.hal.sx1302_spectral_scan import (
+    SpectralScanResult,
+    SX1302SpectralScan,
+)
 from src.hal.sx1302_types import (
     LgwConfBoardS,
     LgwConfRxifS,
@@ -100,6 +105,7 @@ class SX1302Wrapper:
         self._crc_bad_count = 0
         self._no_crc_count = 0
         self._unknown_status_count = 0
+        self._spectral_scan: Optional[SX1302SpectralScan] = None
 
     def load(self) -> None:
         if not self._lib_path or not os.path.exists(self._lib_path):
@@ -364,6 +370,40 @@ class SX1302Wrapper:
             raise RuntimeError("Library not loaded")
         return self._lib.lgw_time_on_air(ctypes.byref(tx_pkt))
 
+    def run_spectral_scan(
+        self,
+        frequency_hz: int,
+        nb_scan: int = 1024,
+    ) -> Optional[SpectralScanResult]:
+        """Run one spectral scan at the given frequency.
+
+        Returns None if the HAL build does not expose spectral scan
+        or if the scan failed for any reason. Caller is responsible
+        for serialising scans (no concurrent calls on this wrapper).
+        """
+        if self._lib is None:
+            self.load()
+        if self._spectral_scan is None:
+            self._spectral_scan = SX1302SpectralScan(self._lib)
+        if not self._spectral_scan.supported:
+            return None
+        if not self._started:
+            logger.debug("Skipping spectral scan: concentrator not started")
+            return None
+        return self._spectral_scan.run(frequency_hz, nb_scan=nb_scan)
+
+    @property
+    def spectral_scan_supported(self) -> bool:
+        """True if the loaded HAL supports spectral scan."""
+        if self._lib is None:
+            try:
+                self.load()
+            except Exception:
+                return False
+        if self._spectral_scan is None:
+            self._spectral_scan = SX1302SpectralScan(self._lib)
+        return self._spectral_scan.supported
+
     # ── Private: HAL configuration ──────────────────────────────────
 
     def _configure_board(self) -> None:
@@ -424,65 +464,8 @@ class SX1302Wrapper:
             if result != LGW_HAL_SUCCESS:
                 raise RuntimeError(f"lgw_rxif_setconf({LGW_MULTI_NB}) failed")
 
-    # ── Private: function signatures ────────────────────────────────
-
     def _setup_function_signatures(self) -> None:
-        lib = self._lib
-
-        lib.lgw_board_setconf.restype = ctypes.c_int
-        lib.lgw_board_setconf.argtypes = [ctypes.POINTER(LgwConfBoardS)]
-
-        lib.lgw_rxrf_setconf.restype = ctypes.c_int
-        lib.lgw_rxrf_setconf.argtypes = [
-            ctypes.c_uint8,
-            ctypes.POINTER(LgwConfRxrfS),
-        ]
-
-        lib.lgw_rxif_setconf.restype = ctypes.c_int
-        lib.lgw_rxif_setconf.argtypes = [
-            ctypes.c_uint8,
-            ctypes.POINTER(LgwConfRxifS),
-        ]
-
-        lib.lgw_start.restype = ctypes.c_int
-        lib.lgw_start.argtypes = []
-
-        lib.lgw_stop.restype = ctypes.c_int
-        lib.lgw_stop.argtypes = []
-
-        lib.lgw_receive.restype = ctypes.c_int
-        lib.lgw_receive.argtypes = [
-            ctypes.c_uint8,
-            ctypes.POINTER(LgwPktRxS),
-        ]
-
-        lib.sx1302_lora_syncword.restype = ctypes.c_int
-        lib.sx1302_lora_syncword.argtypes = [
-            ctypes.c_bool,
-            ctypes.c_uint8,
-        ]
-
-        lib.lgw_txgain_setconf.restype = ctypes.c_int
-        lib.lgw_txgain_setconf.argtypes = [
-            ctypes.c_uint8,
-            ctypes.POINTER(LgwTxGainLutS),
-        ]
-
-        lib.lgw_send.restype = ctypes.c_int
-        lib.lgw_send.argtypes = [ctypes.POINTER(LgwPktTxS)]
-
-        lib.lgw_status.restype = ctypes.c_int
-        lib.lgw_status.argtypes = [
-            ctypes.c_uint8,
-            ctypes.c_uint8,
-            ctypes.POINTER(ctypes.c_uint8),
-        ]
-
-        lib.lgw_abort_tx.restype = ctypes.c_int
-        lib.lgw_abort_tx.argtypes = [ctypes.c_uint8]
-
-        lib.lgw_time_on_air.restype = ctypes.c_uint32
-        lib.lgw_time_on_air.argtypes = [ctypes.POINTER(LgwPktTxS)]
+        apply_signatures(self._lib)
 
     @staticmethod
     def _find_library() -> str:

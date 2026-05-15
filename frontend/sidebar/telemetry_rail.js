@@ -62,24 +62,18 @@ class SidebarTelemetryRail {
         const bw = data.bandwidth_khz;
         const samples = Array.isArray(data.samples_dbm) ? data.samples_dbm : [];
         const floor = data.theoretical_floor_dbm;
+        const source = data.source;
 
         if (calibrating || value == null) {
             this._noiseEl.textContent = value == null ? 'calibrating' : `${value.toFixed(0)} dBm`;
-            this._noiseEl.title = (
-                'Noise floor estimate is the lowest value of '
-                + '(rssi - snr) seen across recent packets. Settles '
-                + 'after a few packets arrive; tightens further when '
-                + 'weaker / further-away packets are heard.'
-            );
         } else {
             this._noiseEl.textContent = `${value.toFixed(0)} dBm`;
-            this._noiseEl.title = (
-                'Upper bound on the noise floor, derived from '
-                + 'received-packet metadata. Lower readings are '
-                + 'better; the estimate tightens as more weak packets '
-                + 'are heard.'
-            );
         }
+        this._noiseEl.title = _buildNoiseTooltip({
+            source, value, calibrating, stale, samples_count: data.samples_count,
+            theoretical_floor_dbm: floor,
+        });
+
         if (bw) {
             this._noiseBwEl.textContent = `${bw.toFixed(0)} kHz`;
         } else {
@@ -93,25 +87,37 @@ class SidebarTelemetryRail {
             'telemetry-rail__noise--calibrating', calibrating,
         );
 
-        // Margin coloring on the readout label, mirrors sparkline logic.
-        this._noiseChip.classList.remove(
-            'telemetry-rail__noise--clean',
-            'telemetry-rail__noise--busy',
-            'telemetry-rail__noise--noisy',
-        );
-        if (!calibrating && value != null && floor != null) {
-            const margin = value - floor;
-            if (margin > 15) {
-                this._noiseChip.classList.add('telemetry-rail__noise--noisy');
-            } else if (margin > 5) {
-                this._noiseChip.classList.add('telemetry-rail__noise--busy');
-            } else {
-                this._noiseChip.classList.add('telemetry-rail__noise--clean');
-            }
-        }
-
         if (this._sparkline) this._sparkline.setSamples(samples, floor);
     }
+}
+
+function _buildNoiseTooltip({ source, value, calibrating, stale, samples_count, theoretical_floor_dbm }) {
+    if (calibrating) {
+        return (
+            'Waiting for the first spectral scan or a few packets '
+            + 'before reporting a number.'
+        );
+    }
+    if (value == null) {
+        return 'No noise floor data yet.';
+    }
+    if (source === 'spectral_scan') {
+        const margin = (theoretical_floor_dbm != null && value != null)
+            ? `${(value - theoretical_floor_dbm).toFixed(1)} dB above theoretical thermal floor`
+            : '';
+        const fresh = stale ? ' (last scan stale)' : '';
+        return (
+            `Direct ambient channel power from SX1302 spectral scan${fresh}. `
+            + 'Sampled on the same frequency the radio is tuned to. '
+            + (margin ? `${margin}.` : '')
+        );
+    }
+    const fresh = stale ? ' (no recent packets)' : '';
+    return (
+        `Packet-derived upper bound (rolling minimum of rssi - snr)${fresh}. `
+        + 'This is a fallback estimate: the true noise floor is at or below this value. '
+        + 'Spectral scan was not available on this device.'
+    );
 }
 
 function _formatUptime(seconds) {

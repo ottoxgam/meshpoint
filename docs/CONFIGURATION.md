@@ -24,6 +24,7 @@ radio:
   sync_word: 0x2B              # 0x2B = Meshtastic. Don't change unless you know why.
   preamble_length: 16          # 16 = Meshtastic standard
   tx_power_dbm: 22             # SX1302 concentrator output power
+  spectral_scan_interval_seconds: 60   # noise floor sampler cadence (0 disables)
 ```
 
 The region sets the base frequency, spreading factor, and bandwidth automatically. You only need `region` in most cases. Override `frequency_mhz`, `spreading_factor`, or `bandwidth_khz` individually to tune for non-default presets (MediumFast, ShortFast, etc.) or custom frequency slots.
@@ -40,6 +41,14 @@ The region sets the base frequency, spreading factor, and bandwidth automaticall
 | `SG_923` | 917.875 MHz | 917.0 - 925.0 MHz |
 
 If `frequency_mhz` falls outside the region's band limits, the service will reject it at startup. Omit `frequency_mhz` entirely to tune to the region default.
+
+### Spectral Scan (Noise Floor)
+
+The dashboard's noise-floor readout in the sidebar comes from the SX1302's built-in spectral scanner: every `spectral_scan_interval_seconds` (default 60) the chip samples ambient channel power on the same frequency the radio is tuned to and reports the 10th-percentile reading as the floor.
+
+Each scan briefly pauses RX on the primary channel for roughly 50 ms. At the default cadence that is ~0.08% of receive time — well below normal RF packet-loss variance. The minimum interval is clamped to 5 seconds so a misconfigured value cannot starve the receiver. Set the value to `0` to disable spectral scanning entirely; the dashboard will fall back to a packet-derived noise estimate (a loose upper bound, but better than nothing).
+
+If your `libloragw` build does not expose the spectral scan symbols (older HAL revisions), the service logs a warning at startup and the fallback is used automatically.
 
 ### Standard Meshtastic Presets
 
@@ -441,6 +450,7 @@ radio:                 # LoRa physical layer
   sync_word: 0x2B
   preamble_length: 16
   tx_power_dbm: 22
+  spectral_scan_interval_seconds: 60   # noise floor sampler; 0 disables
 
 meshtastic:            # Meshtastic protocol settings
   primary_channel_name: "LongFast"

@@ -47,6 +47,11 @@ class RadioConfig:
     sync_word: int = 0x2B
     preamble_length: int = 16
     tx_power_dbm: int = 22
+    # Periodic SX1302 spectral scan to measure ambient noise floor
+    # directly. Each scan briefly pauses RX on the primary channel
+    # (~50 ms). Default 60 s gives ~0.08% downtime; raise for less.
+    # Set to 0 to disable (falls back to packet-derived noise floor).
+    spectral_scan_interval_seconds: float = 60.0
 
 
 @dataclass

@@ -39,6 +39,7 @@ from src.models.device_identity import DeviceIdentity, _stable_device_id
 from src.models.packet import Packet
 from src.storage.message_repository import MessageRepository
 from src.api.telemetry.noise_floor import NoiseFloorTracker
+from src.api.telemetry.spectral_scan_service import SpectralScanService
 from src.transmit.nodeinfo_broadcaster import (
     NodeInfoBroadcaster,
     clamp_interval_minutes,
@@ -55,6 +56,7 @@ upstream: UpstreamClient | None = None
 nodeinfo_broadcaster: NodeInfoBroadcaster | None = None
 noise_floor_tracker = NoiseFloorTracker()
 _noise_floor_emitter_task = None
+_spectral_scan_service: SpectralScanService | None = None
 
 
 def create_app(config: AppConfig | None = None) -> FastAPI:
@@ -140,6 +142,13 @@ def create_app(config: AppConfig | None = None) -> FastAPI:
             _noise_floor_emitter_loop(noise_floor_tracker, ws_manager)
         )
 
+        global _spectral_scan_service
+        _spectral_scan_service = _build_spectral_scan_service(
+            pipeline, config, noise_floor_tracker,
+        )
+        if _spectral_scan_service is not None:
+            await _spectral_scan_service.start()
+
         _init_routes(
             pipeline, config, identity, auth_subsystem, tx_service, message_repo
         )
@@ -147,6 +156,8 @@ def create_app(config: AppConfig | None = None) -> FastAPI:
         print_banner(config)
         logger.info("Meshpoint started -- listening for packets")
         yield
+        if _spectral_scan_service is not None:
+            await _spectral_scan_service.stop()
         if _noise_floor_emitter_task is not None:
             _noise_floor_emitter_task.cancel()
             try:
@@ -508,6 +519,42 @@ def _get_concentrator_wrapper(coord: PipelineCoordinator):
     """Get the SX1302 wrapper from the concentrator source if running."""
     src = _find_concentrator_source(coord)
     return src._wrapper if src else None
+
+
+def _build_spectral_scan_service(
+    coord: PipelineCoordinator,
+    config: AppConfig,
+    tracker: NoiseFloorTracker,
+) -> SpectralScanService | None:
+    """Build the spectral scan service if hardware + config allow.
+
+    Returns None when:
+      - The concentrator is not present (e.g. test container)
+      - radio.spectral_scan_interval_seconds is 0 (user disabled)
+      - The loaded HAL does not expose spectral scan symbols (the
+        service itself will detect this and no-op on start, but we
+        also early-return to avoid the log noise)
+    """
+    interval = config.radio.spectral_scan_interval_seconds
+    if interval is None or interval <= 0:
+        logger.info("Spectral scan disabled via radio.spectral_scan_interval_seconds")
+        return None
+    wrapper = _get_concentrator_wrapper(coord)
+    if wrapper is None:
+        return None
+    if not wrapper.spectral_scan_supported:
+        return None
+    freq_mhz = config.radio.frequency_mhz
+    if freq_mhz is None:
+        logger.warning("Spectral scan: no resolved radio.frequency_mhz; skipping")
+        return None
+    return SpectralScanService(
+        wrapper=wrapper,
+        tracker=tracker,
+        frequency_hz=int(freq_mhz * 1_000_000),
+        bandwidth_khz=config.radio.bandwidth_khz,
+        interval_seconds=float(interval),
+    )
 
 
 def _get_channel_plan(config: AppConfig):

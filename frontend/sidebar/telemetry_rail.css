@@ -100,19 +100,6 @@
     height: 24px;
 }
 
-.telemetry-rail__noise--clean .telemetry-rail__noise-value {
-    color: var(--accent-green, #00e5a0);
-    text-shadow: 0 0 6px rgba(0, 229, 160, 0.3);
-}
-.telemetry-rail__noise--busy .telemetry-rail__noise-value {
-    color: var(--accent-amber, #f59e0b);
-    text-shadow: 0 0 6px rgba(245, 158, 11, 0.3);
-}
-.telemetry-rail__noise--noisy .telemetry-rail__noise-value {
-    color: var(--accent-red, #ef4444);
-    text-shadow: 0 0 6px rgba(239, 68, 68, 0.3);
-}
-
 .telemetry-rail__noise--stale {
     opacity: 0.55;
 }

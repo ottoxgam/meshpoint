@@ -8,7 +8,9 @@ from src.api.telemetry.noise_floor import (
     CALIBRATING_BELOW,
     MAX_SNR_FOR_FLOOR_DB,
     NOISE_FIGURE_DB,
-    STALE_AFTER_SECONDS,
+    SOURCE_PACKETS,
+    SOURCE_SPECTRAL,
+    STALE_AFTER_SECONDS_PACKETS,
     NoiseFloorTracker,
     _theoretical_floor,
 )
@@ -50,12 +52,6 @@ class TestNoiseFloorTracker(unittest.TestCase):
         tracker.update(rssi_dbm=-80, snr_db=2, bandwidth_khz=250)   # -82
         self.assertEqual(tracker.rolling_min, -100.0)
 
-    def test_rolling_mean_averages_buffer(self) -> None:
-        tracker = NoiseFloorTracker()
-        tracker.update(rssi_dbm=-65, snr_db=7, bandwidth_khz=250)   # -72
-        tracker.update(rssi_dbm=-95, snr_db=5, bandwidth_khz=250)   # -100
-        # Mean of -72 and -100 is -86.
-        self.assertAlmostEqual(tracker.rolling_mean, -86.0, places=1)
 
     def test_none_inputs_return_none(self) -> None:
         tracker = NoiseFloorTracker()
@@ -90,7 +86,7 @@ class TestNoiseFloorTracker(unittest.TestCase):
         snap = tracker.snapshot()
         self.assertEqual(len(snap["samples_dbm"]), 5)
 
-    def test_snapshot_value_is_rolling_min(self) -> None:
+    def test_snapshot_value_is_rolling_min_when_only_packets_seen(self) -> None:
         tracker = NoiseFloorTracker()
         tracker.update(rssi_dbm=-65, snr_db=7, bandwidth_khz=250)   # -72
         tracker.update(rssi_dbm=-95, snr_db=8, bandwidth_khz=250)   # -103
@@ -98,13 +94,12 @@ class TestNoiseFloorTracker(unittest.TestCase):
         self.assertEqual(snap["bandwidth_khz"], 250)
         self.assertAlmostEqual(snap["theoretical_floor_dbm"], -114.0, delta=0.5)
         self.assertEqual(snap["value_dbm"], -103.0)
-        self.assertEqual(snap["mean_dbm"], -87.5)
+        self.assertEqual(snap["source"], SOURCE_PACKETS)
         self.assertFalse(snap["stale"])
 
     def test_snapshot_marks_stale_when_no_recent_sample(self) -> None:
         tracker = NoiseFloorTracker()
-        # Inject a synthetic old sample and verify staleness.
-        old_ts = time.time() - (STALE_AFTER_SECONDS + 5)
+        old_ts = time.time() - (STALE_AFTER_SECONDS_PACKETS + 5)
         tracker.update(
             rssi_dbm=-90, snr_db=5, bandwidth_khz=250, timestamp=old_ts,
         )
@@ -117,7 +112,6 @@ class TestNoiseFloorTracker(unittest.TestCase):
         tracker.reset()
         snap = tracker.snapshot()
         self.assertIsNone(snap["value_dbm"])
-        self.assertIsNone(snap["mean_dbm"])
         self.assertEqual(len(snap["samples_dbm"]), 0)
         self.assertTrue(snap["stale"])
 
@@ -226,6 +220,71 @@ class TestNoiseFigureSanity(unittest.TestCase):
 
     def test_noise_figure_constant_matches_doc(self) -> None:
         self.assertEqual(NOISE_FIGURE_DB, 6.0)
+
+
+class TestSpectralSourcePreferred(unittest.TestCase):
+    """When spectral-scan readings are present, they take precedence
+    over packet-derived rolling-min, because they directly measure
+    ambient channel power instead of bounding it from above."""
+
+    def test_spectral_reading_wins_over_packet_history(self) -> None:
+        tracker = NoiseFloorTracker()
+        # Establish a packet-derived bound first; this is what the
+        # old single-source tracker would have shown.
+        tracker.update(rssi_dbm=-65, snr_db=7, bandwidth_khz=250)
+        # Now feed a spectral scan and expect it to dominate.
+        tracker.update_from_spectral(
+            floor_dbm=-118.0,
+            median_dbm=-115.0,
+            frequency_hz=906_875_000,
+            bandwidth_khz=250,
+            samples=1024,
+        )
+        snap = tracker.snapshot()
+        self.assertEqual(snap["source"], SOURCE_SPECTRAL)
+        self.assertEqual(snap["value_dbm"], -118.0)
+        self.assertEqual(snap["median_dbm"], -115.0)
+        self.assertEqual(snap["frequency_hz"], 906_875_000)
+        self.assertFalse(snap["calibrating"])
+
+    def test_packet_fallback_when_no_spectral_reading(self) -> None:
+        tracker = NoiseFloorTracker()
+        tracker.update(rssi_dbm=-95, snr_db=5, bandwidth_khz=250)
+        snap = tracker.snapshot()
+        self.assertEqual(snap["source"], SOURCE_PACKETS)
+        self.assertEqual(snap["value_dbm"], -100.0)
+
+    def test_packet_fallback_when_spectral_reading_is_stale(self) -> None:
+        tracker = NoiseFloorTracker()
+        # Stale spectral reading from 10 minutes ago (way past the
+        # 180-second stale threshold).
+        tracker.update_from_spectral(
+            floor_dbm=-118.0,
+            median_dbm=-115.0,
+            frequency_hz=906_875_000,
+            bandwidth_khz=250,
+            samples=1024,
+            timestamp=time.time() - 600,
+        )
+        # Fresh packet sample should be picked instead.
+        tracker.update(rssi_dbm=-95, snr_db=5, bandwidth_khz=250)
+        snap = tracker.snapshot()
+        self.assertEqual(snap["source"], SOURCE_PACKETS)
+        self.assertEqual(snap["value_dbm"], -100.0)
+
+    def test_spectral_history_is_buffered_for_sparkline(self) -> None:
+        tracker = NoiseFloorTracker()
+        for floor in (-118, -119, -117, -120):
+            tracker.update_from_spectral(
+                floor_dbm=floor,
+                median_dbm=floor + 3,
+                frequency_hz=906_875_000,
+                bandwidth_khz=250,
+                samples=1024,
+            )
+        snap = tracker.snapshot()
+        self.assertEqual(snap["samples_count"], 4)
+        self.assertEqual(snap["samples_dbm"], [-118.0, -119.0, -117.0, -120.0])
 
 
 if __name__ == "__main__":
