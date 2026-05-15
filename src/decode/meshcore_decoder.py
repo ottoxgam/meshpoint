@@ -178,6 +178,8 @@ class MeshcoreDecoder:
 
         if packet.packet_type == PacketType.NODEINFO:
             node.long_name = packet.decoded_payload.get("long_name")
+            node.latitude = packet.decoded_payload.get("latitude")
+            node.longitude = packet.decoded_payload.get("longitude")
 
         if packet.packet_type == PacketType.POSITION:
             node.latitude = packet.decoded_payload.get("latitude")
