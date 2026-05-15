@@ -309,6 +309,11 @@ def _build_tx_service(
         meshcore_tx.set_source(mc_source)
         meshcore_tx.set_post_command_callback(mc_source.restart_auto_fetching)
 
+        async def _sync_channels_on_connect():
+            await meshcore_tx.sync_channels(config.meshcore.channel_keys)
+
+        mc_source.set_connected_callback(_sync_channels_on_connect)
+
     wrapper = _get_concentrator_wrapper(coord)
     crypto = coord._crypto if hasattr(coord, "_crypto") else None
     channel_plan = _get_channel_plan(config)
@@ -590,7 +595,10 @@ def _setup_message_interception(
         if is_broadcast:
             if our_node_hex and source == our_node_hex:
                 return
-            ch_idx = channel_hash_map.get(packet.channel_hash, 0)
+            if packet.protocol == Protocol.MESHCORE:
+                ch_idx = packet.channel_hash or 0
+            else:
+                ch_idx = channel_hash_map.get(packet.channel_hash, 0)
             node_id = f"broadcast:{packet.protocol.value}:{ch_idx}"
             direction = "received"
         elif is_for_us:
