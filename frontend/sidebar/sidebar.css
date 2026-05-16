@@ -662,14 +662,23 @@
 /* Phone (< 768px): sidebar collapses to a drawer that overlays
  * content. Specificity-bumped from `.app` to `.app[data-sidebar]`
  * on the grid override so any persisted state on the root element
- * cannot keep the sidebar pinned in the layout grid. */
+ * cannot keep the sidebar pinned in the layout grid.
+ *
+ * Single grid column on phones (not "0 1fr"). The sidebar is
+ * position: fixed below and so is removed from grid flow, but
+ * <main class="app__content"> is still position: static. With a
+ * "0 1fr" template, grid auto-placement put <main> into the
+ * first (0px) cell and squashed it to zero width, so the page
+ * rendered as just the off-screen drawer with no visible content.
+ * One 1fr column means <main> always gets the full viewport width
+ * regardless of which other grid children come and go. */
 @media (max-width: 767px) {
     .app,
     .app[data-sidebar="rail"],
     .app[data-sidebar="expanded"],
     .app[data-sidebar="hidden"],
     .app[data-sidebar="drawer-open"] {
-        grid-template-columns: 0 1fr;
+        grid-template-columns: 1fr;
     }
     .sidebar {
         position: fixed;
