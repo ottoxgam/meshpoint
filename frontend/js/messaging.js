@@ -10,7 +10,6 @@ class MessagingPanel {
         this._contacts = null;
         this._chat = null;
         this._activeConvo = null;
-        this._unreadTotal = 0;
         this._monitorMode = false;
         this._txStatus = null;
     }
@@ -88,13 +87,18 @@ class MessagingPanel {
         });
 
         this._setupWebSocket();
-        this._contacts.load(this._monitorMode);
+        this._loadInitialConversations();
         this._loadStatus();
     }
 
     onActivated() {
         if (!this._initialized) this.init();
-        this._contacts.load(this._monitorMode);
+        this._loadInitialConversations();
+    }
+
+    async _loadInitialConversations() {
+        await this._contacts.load(this._monitorMode);
+        this._syncSidebarBadge();
     }
 
     openConversation(convo) {
@@ -111,6 +115,13 @@ class MessagingPanel {
         this._activeConvo = convo;
         this._chat.setConversation(convo);
         this._contacts.setActive(convo.node_id);
+
+        // Opening a DM means the user has read it: clear server-side
+        // status, drop the per-row badge, and recompute the sidebar
+        // total. Broadcast/channel conversations skip mark-read by
+        // design (see MessagingContacts.markConversationRead).
+        Promise.resolve(this._contacts.markConversationRead(convo.node_id))
+            .then(() => this._syncSidebarBadge());
     }
 
     async _onSendMessage(text, convo) {
@@ -189,31 +200,29 @@ class MessagingPanel {
                 if (data.rssi != null) msg.rssi = data.rssi;
                 if (data.snr != null) msg.snr = data.snr;
                 this._chat.addMessage(msg);
+
+                // Server still has this row marked unread until the
+                // explicit mark-read POST fires, so a future page
+                // refresh would show a stale badge for a message we
+                // already read live in front of the user. Push
+                // through here too. addOrUpdateConversation below
+                // already skips the local unread bump when the
+                // node_id matches the active conversation.
+                Promise.resolve(this._contacts.markConversationRead(data.node_id))
+                    .then(() => this._syncSidebarBadge());
             }
             this._contacts.addOrUpdateConversation(data);
 
-            // Sidebar unread badge is DM-only on purpose.
-            //
-            // Public/broadcast channels (LongFast, MeshCore public, etc.)
-            // are routinely spammy on real meshes; if every channel
-            // packet bumped the badge, the indicator would be lit
-            // constantly and stop conveying signal. The server tags
-            // broadcast conversations with a node_id of the form
-            // "broadcast:<protocol>:<channel_idx>" (server.py
-            // on_text_packet, is_broadcast branch) so we filter on
-            // that prefix.
-            //
-            // Also skip when the user is already looking at the
-            // conversation: the message renders inline in the chat
-            // pane, the badge would just create busywork to dismiss.
-            const isBroadcast = (data.node_id || '').startsWith('broadcast:');
-            const isReceivedDm =
-                !isOverheard
-                && !isBroadcast
-                && data.direction !== 'sent';
-            if (isReceivedDm && !isViewingThisConvo) {
-                this._updateUnreadBadge();
-            }
+            // Sidebar Messages badge derives from the per-conversation
+            // unread counts that MessagingContacts maintains (seeded
+            // from the server's read-state aware
+            // /api/messages/conversations response on load, kept fresh
+            // by addOrUpdateConversation here). DM-vs-broadcast
+            // filtering happens inside getDmUnreadTotal because
+            // public/broadcast channels are routinely spammy on real
+            // meshes and we want this badge to stay a meaningful "you
+            // got a DM" signal, not a public-channel firehose.
+            this._syncSidebarBadge();
         });
 
         window.concentratorWS.on('message_updated', (data) => {
@@ -274,18 +283,37 @@ class MessagingPanel {
         banner.style.display = 'none';
     }
 
-    _updateUnreadBadge() {
+    /**
+     * Single source of truth for the sidebar Messages badge.
+     * Recomputes from MessagingContacts._conversations[].unread_count
+     * (DM-only, see getDmUnreadTotal). Call after any state change
+     * that could have moved the total: initial load, live message
+     * received, conversation marked read.
+     */
+    _syncSidebarBadge() {
         const badge = document.getElementById('msg-unread-badge');
         if (!badge) return;
-        this._unreadTotal++;
-        badge.textContent = this._unreadTotal;
-        badge.style.display = this._unreadTotal > 0 ? 'inline-block' : 'none';
+        const total = this._contacts ? this._contacts.getDmUnreadTotal() : 0;
+        if (total > 0) {
+            badge.textContent = String(total);
+            badge.style.display = 'inline-block';
+        } else {
+            badge.textContent = '';
+            badge.style.display = 'none';
+        }
     }
 
+    /**
+     * Backwards-compat shim for the sidebar controller, which calls
+     * this when the user navigates to the Messages route. With the
+     * server-driven unread model the badge no longer needs to be
+     * force-cleared on tab activation: clearing only happens when a
+     * specific conversation is opened. Just resync from current
+     * state so a stale badge from before the user clicked away gets
+     * recomputed.
+     */
     resetUnreadBadge() {
-        this._unreadTotal = 0;
-        const badge = document.getElementById('msg-unread-badge');
-        if (badge) badge.style.display = 'none';
+        this._syncSidebarBadge();
     }
 }
 
