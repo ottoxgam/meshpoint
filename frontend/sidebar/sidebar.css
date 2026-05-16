@@ -642,8 +642,15 @@
  * preserve content space, but the user can still toggle to the
  * full 240px sidebar via the collapse button or the [ shortcut.
  * Earlier versions of this rule forced rail width even when
- * data-sidebar="expanded", which made the toggle do nothing. */
-@media (max-width: 1023px) {
+ * data-sidebar="expanded", which made the toggle do nothing.
+ *
+ * IMPORTANT: this query MUST be bounded with min-width: 768px.
+ * Without it, the .app[data-sidebar="..."] selectors below have
+ * higher specificity (0,2,0) than the plain `.app` selector
+ * (0,1,0) used in the phone breakpoint, so on a 360px phone the
+ * tablet rules would win and pin the sidebar at 240px / 76px
+ * instead of letting the phone rule collapse it to a drawer. */
+@media (min-width: 768px) and (max-width: 1023px) {
     .app[data-sidebar="rail"] {
         grid-template-columns: var(--sidebar-rail-width) 1fr;
     }
@@ -652,8 +659,16 @@
     }
 }
 
+/* Phone (< 768px): sidebar collapses to a drawer that overlays
+ * content. Specificity-bumped from `.app` to `.app[data-sidebar]`
+ * on the grid override so any persisted state on the root element
+ * cannot keep the sidebar pinned in the layout grid. */
 @media (max-width: 767px) {
-    .app {
+    .app,
+    .app[data-sidebar="rail"],
+    .app[data-sidebar="expanded"],
+    .app[data-sidebar="hidden"],
+    .app[data-sidebar="drawer-open"] {
         grid-template-columns: 0 1fr;
     }
     .sidebar {
@@ -665,6 +680,7 @@
         transform: translateX(-100%);
         transition: transform var(--motion-base) var(--ease-out-expo);
         box-shadow: 2px 0 24px rgba(0, 0, 0, 0.45);
+        z-index: 1000;
     }
     .app[data-sidebar="drawer-open"] .sidebar {
         transform: translateX(0);
@@ -676,7 +692,8 @@
     .app[data-sidebar="drawer-open"] .sidebar__label,
     .app[data-sidebar="drawer-open"] .sidebar__chevron,
     .app[data-sidebar="drawer-open"] .sidebar__role,
-    .app[data-sidebar="drawer-open"] .sidebar__signout-label {
+    .app[data-sidebar="drawer-open"] .sidebar__signout-label,
+    .app[data-sidebar="drawer-open"] .sidebar__device {
         opacity: 1;
         width: auto;
         pointer-events: auto;
