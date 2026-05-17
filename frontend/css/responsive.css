@@ -20,7 +20,23 @@
 
 @media (max-width: 1024px) {
     .dashboard { height: auto; overflow: auto; }
-    .dashboard__main { grid-template-columns: 1fr; }
+    /* The desktop base rule for .dashboard__main is `flex: 1; min-height: 0`
+     * so it can grow to fill the column-flex dashboard's remaining height
+     * after stats + feed are placed. At narrow widths where the dashboard
+     * itself becomes `height: auto; overflow: auto`, that flex:1 + min-height:0
+     * combination lets the grid container collapse to height: 0 in tight
+     * viewports (phone landscape ~393px tall: 80 stats + 220 feed = 300,
+     * leaving ~49px for main, which then shrinks to 0 under flex-shrink:1).
+     * The map's min-height:50vh still applies but the *parent grid* is 0
+     * tall, so the user sees stats then jumps straight to the packets feed
+     * with the map and node panels visually missing. Forcing flex-basis to
+     * the grid's natural content height + flex-shrink:0 keeps the map and
+     * node panels visible at any viewport; the dashboard's overflow:auto
+     * absorbs any overflow as a scroll. */
+    .dashboard__main {
+        grid-template-columns: 1fr;
+        flex: 0 0 auto;
+    }
     .dashboard__map { min-height: 50vh; }
     .dashboard__side { max-height: 300px; }
     /* Feed must stay bounded at narrow widths. Earlier this rule used
