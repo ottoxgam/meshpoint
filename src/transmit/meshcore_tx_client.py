@@ -142,6 +142,9 @@ class MeshCoreTxClient:
                 self._mc.commands.send_chan_msg(channel, text),
                 timeout=10.0,
             )
+            if result is None:
+                await self._run_post_command()
+                return SendResult(success=False, error="No response from companion")
             event_type = (
                 result.type.value
                 if hasattr(result.type, "value")
@@ -171,6 +174,9 @@ class MeshCoreTxClient:
                 self._mc.commands.send_msg(destination, text),
                 timeout=10.0,
             )
+            if result is None:
+                await self._run_post_command()
+                return SendResult(success=False, error="No response from companion")
             event_type = (
                 result.type.value
                 if hasattr(result.type, "value")
@@ -196,6 +202,9 @@ class MeshCoreTxClient:
                 self._mc.commands.send_advert(flood=flood),
                 timeout=10.0,
             )
+            if result is None:
+                await self._run_post_command()
+                return SendResult(success=False, error="No response from companion")
             event_type = (
                 result.type.value
                 if hasattr(result.type, "value")
@@ -261,6 +270,9 @@ class MeshCoreTxClient:
                 self._mc.commands.req_telemetry_sync(pubkey),
                 timeout=10.0,
             )
+            if result is None:
+                await self._run_post_command()
+                return SendResult(success=False, error="No response from companion")
             event_type = (
                 result.type.value
                 if hasattr(result.type, "value")
